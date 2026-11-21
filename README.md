@@ -8,34 +8,25 @@
 
 照片只在手機上處理，不會上傳到任何地方。
 
-## 一、放上 GitHub Pages（免費，用電腦做最快）
+## 網址
 
-1. 登入 github.com，按右上角「+」→「New repository」。
-2. Repository name 填 `photo-frame`，選 **Public**，按「Create repository」。
-3. 在新 repo 的頁面點「uploading an existing file」，把這個資料夾**裡面**的所有東西一起拖進去，然後按「Commit changes」。要拖的有：
-   - `index.html`、`sw.js`、`manifest.webmanifest`、`.nojekyll`
-   - `fonts`、`icons`、`vendor`、`licenses` 四個資料夾
-4. 到 repo 的「Settings」→ 左邊「Pages」，Source 選「Deploy from a branch」，Branch 選 `main`、資料夾選 `/ (root)`，按「Save」。
-5. 等一兩分鐘，頁面上方會出現網址：`https://你的帳號.github.io/photo-frame/`。
+https://en906.github.io/photo-frame/
 
-拖檔案時要注意兩件事：
+網站由 GitHub Pages 從 `gh-pages` 分支發布，`main` 分支放的是同一份檔案。
 
-- 要拖的是資料夾「裡面的東西」，不是整個 `photo-frame-app` 資料夾。`index.html` 要在 repo 的最上層，網址才打得開。
-- `.nojekyll` 是隱藏檔，Mac 的 Finder 要按 ⌘⇧. 才看得到。沒傳到也沒關係。
-
-## 二、加到 iPhone 主畫面
+## 加到 iPhone 主畫面
 
 1. 用 **Safari** 打開上面的網址。
 2. 按「分享」→「加入主畫面」。如果有「以網頁 App 打開」的選項，保持開啟，再按「加入」。
 3. 之後從主畫面的「參數邊框」圖示打開，就是全螢幕的 App。
 
-## 三、存照片
+## 存照片
 
 輸出後按「存到相簿」，再選「儲存影像」。一次輸出多張的話，可以按「全部存到相簿」一起存。
 
 ## 更新
 
-改了任何檔案，就重新上傳到同一個 repo。記得把 `sw.js` 第二行的 CACHE 名稱也改掉，例如在後面加 `-2`。然後在手機上把 App 完全關掉、再打開，就會換成新版。
+改了任何檔案，把 `sw.js` 第二行的 CACHE 名稱也改掉（例如在後面加 `-2`），再推到 `gh-pages` 分支（`main` 也一起更新）。手機上把 App 完全關掉、再打開，就會換成新版。
 
 ## 隱私
 
