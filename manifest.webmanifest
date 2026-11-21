@@ -1,0 +1,29 @@
+{
+  "name": "照片參數邊框",
+  "short_name": "參數邊框",
+  "description": "替照片加上模糊背景邊框、機型與拍攝參數，文字、Logo、浮水印都能調整。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14171B",
+  "theme_color": "#14171B",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

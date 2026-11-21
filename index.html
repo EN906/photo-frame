@@ -1,0 +1,1505 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>照片參數邊框</title>
+<meta name="description" content="替照片加上模糊背景邊框、機型與拍攝參數，文字、Logo、浮水印都能調整。照片只在裝置上處理，不會上傳。">
+<meta name="theme-color" content="#14171B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="參數邊框">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{
+  /* Layout: darkroom bench. A sticky print stage on top (left column when wide), adjustment drawers below, a fixed action rail at the bottom. */
+  --bg:#E8EBEE;
+  --surface:#FFFFFF;
+  --surface-2:#EEF1F4;
+  --fg:#15181C;
+  --muted:#59616B;
+  --line:#D2D7DD;
+  --accent:#9A5800;
+  --accent-fg:#FFFFFF;
+  --accent-soft:rgba(154,88,0,.12);
+  --stage:#D5DAE0;
+  --stage-fg:#3B424A;
+  --scrim:rgba(12,14,17,.55);
+  --shadow:rgba(10,12,16,.22);
+  --knob:#FFFFFF;
+  --danger:#B42318;
+  --bar:rgba(232,235,238,.88);
+  --font-ui:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1114;--surface:#171A1E;--surface-2:#1F2328;--fg:#ECEEF0;--muted:#98A0AA;--line:#2A2F35;
+    --accent:#F0A63A;--accent-fg:#1C1404;--accent-soft:rgba(240,166,58,.15);
+    --stage:#07080A;--stage-fg:#B8BEC6;--scrim:rgba(0,0,0,.62);--shadow:rgba(0,0,0,.55);--knob:#FFFFFF;--danger:#FF7A6E;--bar:rgba(15,17,20,.88);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1114;--surface:#171A1E;--surface-2:#1F2328;--fg:#ECEEF0;--muted:#98A0AA;--line:#2A2F35;
+  --accent:#F0A63A;--accent-fg:#1C1404;--accent-soft:rgba(240,166,58,.15);
+  --stage:#07080A;--stage-fg:#B8BEC6;--scrim:rgba(0,0,0,.62);--shadow:rgba(0,0,0,.55);--knob:#FFFFFF;--danger:#FF7A6E;--bar:rgba(15,17,20,.88);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-ui);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--stage)}
+body.noscroll{overflow:hidden}
+button,input,select{font:inherit;color:inherit;touch-action:manipulation}
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;opacity:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px calc(104px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "stage" "strip" "panel"}
+.top{grid-area:top;display:flex;align-items:flex-end;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;min-width:0}
+.top h1{margin:0;font-size:1.3rem;font-weight:700;letter-spacing:.04em;text-wrap:balance}
+.top p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+.readout{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0}
+
+.stage{grid-area:stage;position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--stage);margin-left:calc(-1*max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1*max(16px,env(safe-area-inset-right,0px)))}
+.stage-inner{position:relative;height:min(46vh,540px);display:flex;align-items:center;justify-content:center;padding:14px}
+#preview{display:block;max-width:100%;max-height:100%;box-shadow:0 2px 6px var(--shadow),0 14px 36px var(--shadow)}
+.badge{position:absolute;left:12px;top:12px;font-size:.74rem;padding:3px 9px;border-radius:999px;background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.busy{position:absolute;left:0;right:0;bottom:12px;margin:0 auto;width:max-content;max-width:90%;font-size:.8rem;padding:6px 12px;border-radius:999px;background:var(--surface);color:var(--fg);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+
+.strip{grid-area:strip;display:flex;gap:8px;overflow-x:auto;padding:2px;scrollbar-width:none;min-width:0}
+.strip::-webkit-scrollbar{display:none}
+.thumb{flex:0 0 auto;width:58px;height:58px;border-radius:10px;border:2px solid transparent;background:var(--surface-2) center/cover no-repeat;padding:0;cursor:pointer}
+.thumb[aria-current="true"]{border-color:var(--accent)}
+.thumb.add{display:grid;place-items:center;border:1.5px dashed var(--line);color:var(--muted);font-size:1.5rem;line-height:1;background:none}
+
+.panel{grid-area:panel;display:grid;gap:12px;min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.tab{border:0;background:none;padding:9px 2px;border-radius:9px;font-size:.92rem;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
+.tabpanel{display:grid;gap:12px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.card-h h2{margin:0;font-size:.95rem;font-weight:650;letter-spacing:.02em;min-width:0;overflow-wrap:anywhere}
+.card-body{display:grid;gap:12px;min-width:0}
+.row{display:grid;grid-template-columns:6.4em minmax(0,1fr) 4.4em;align-items:center;gap:10px;min-width:0}
+.row.wide{grid-template-columns:6.4em minmax(0,1fr)}
+.row.sw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.row>label:first-child,.lbl{font-size:.88rem;color:var(--muted)}
+.val{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.textrow{display:grid;gap:8px;min-width:0}
+input[type=range]{width:100%;min-width:0;margin:0;accent-color:var(--accent);height:28px;background:transparent}
+input[type=text],select{width:100%;min-width:0;font-size:16px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg)}
+input[type=text]{-webkit-appearance:none;appearance:none}
+input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);padding:2px;cursor:pointer}
+.switch{-webkit-appearance:none;appearance:none;width:46px;height:28px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;cursor:pointer;flex:0 0 auto;margin:0;transition:background-color .15s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:var(--knob);box-shadow:0 1px 3px var(--shadow);transition:transform .15s}
+.switch:checked{background:var(--accent);border-color:var(--accent)}
+.switch:checked::after{transform:translateX(18px)}
+.seg{display:flex;flex-wrap:wrap;gap:2px;padding:2px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);width:max-content;max-width:100%}
+.seg label{padding:6px 12px;border-radius:8px;font-size:.88rem;cursor:pointer;color:var(--muted);white-space:nowrap}
+.seg input:checked+label{background:var(--surface);color:var(--fg);font-weight:600;box-shadow:0 1px 2px var(--shadow)}
+.seg input:focus-visible+label,.grid9 input:focus-visible+label{outline:2px solid var(--accent);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font-size:.8rem;padding:4px 10px;border-radius:999px;cursor:pointer}
+.chip::before{content:"+ ";color:var(--accent)}
+.grid9{display:grid;grid-template-columns:repeat(3,40px);gap:4px}
+.grid9 label{height:30px;border-radius:7px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;cursor:pointer}
+.grid9 label::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.grid9 input:checked+label{background:var(--accent-soft);border-color:var(--accent)}
+.grid9 input:checked+label::after{background:var(--accent)}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:.8rem;color:var(--muted)}
+.field.span2{grid-column:1/-1}
+.hint{margin:0;font-size:.82rem;color:var(--muted);line-height:1.6}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:16px;line-height:1.1;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-align:center}
+.btn.small{font-size:.86rem;padding:8px 12px;border-radius:9px}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:transparent}
+.btn.danger{color:var(--danger);border-color:currentColor}
+.btn:disabled{opacity:.5;cursor:default}
+.linkbtn{border:0;background:none;color:var(--accent);padding:0;font-size:.84rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.alias{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.82rem;color:var(--muted)}
+.alias:empty{display:none}
+
+.actions{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--bar);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.actions .btn{flex:1 1 0;max-width:280px}
+.actions .btn.pick-more{flex:0 0 auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:70;width:max-content;max-width:min(92vw,520px);padding:10px 14px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:.9rem;box-shadow:0 6px 20px var(--shadow)}
+
+.sheet{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet-card{width:min(760px,100%);max-height:94%;overflow:auto;background:var(--surface);border-radius:18px 18px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:12px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet-h h2{margin:0;font-size:1.05rem}
+.result{display:grid;gap:8px;justify-items:center;background:var(--stage);border-radius:12px;padding:12px;min-height:180px;align-content:center}
+.result img{display:block;max-width:100%;max-height:52vh;width:auto;height:auto;-webkit-touch-callout:default}
+.result-meta{font-family:var(--font-mono);font-size:.76rem;color:var(--stage-fg);font-variant-numeric:tabular-nums;text-align:center;overflow-wrap:anywhere}
+.res-strip{display:flex;gap:8px;overflow-x:auto;padding:2px}
+.res-strip button{flex:0 0 auto;width:52px;height:52px;border-radius:9px;border:2px solid transparent;padding:0;background:var(--surface-2) center/cover no-repeat;position:relative;cursor:pointer}
+.res-strip button[aria-current="true"]{border-color:var(--accent)}
+.res-strip button.saved::after{content:"已存";position:absolute;left:2px;right:2px;bottom:2px;font-size:.62rem;line-height:1.4;border-radius:5px;background:var(--accent);color:var(--accent-fg)}
+
+@media (min-width:920px){
+  .app{grid-template-columns:minmax(0,1.3fr) minmax(360px,1fr);grid-template-areas:"top top" "stage strip" "stage panel";align-items:start}
+  .stage{margin:0;border-radius:18px;overflow:hidden;top:calc(env(safe-area-inset-top,0px) + 14px)}
+  .stage-inner{height:min(80vh,920px)}
+  .actions{justify-content:flex-end}
+  .sheet{align-items:center}
+  .sheet-card{border-radius:18px;max-height:90%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>/* standalone: keep the print stage dark so the status bar text stays readable */
+:root{--stage:#14171B;--stage-fg:#B8BEC6}</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>照片參數邊框</h1>
+      <p>模糊背景、機型與拍攝參數，文字、Logo、浮水印都能調。</p>
+    </div>
+    <div class="readout" id="readout" aria-live="polite"></div>
+  </header>
+
+  <section class="stage" aria-label="預覽">
+    <div class="stage-inner" id="stageInner">
+      <canvas id="preview" role="img" aria-label="邊框預覽" width="10" height="10"></canvas>
+      <span class="badge" id="sampleBadge">範例照片</span>
+      <div class="busy" id="busy" hidden><span id="busyText">讀取中</span></div>
+    </div>
+  </section>
+
+  <div class="strip" id="strip" role="group" aria-label="已選的照片"></div>
+
+  <main class="panel">
+    <div class="tabs" role="tablist" aria-label="調整項目">
+      <button class="tab" role="tab" type="button" id="tab-photo" aria-controls="panel-photo" aria-selected="false">照片</button>
+      <button class="tab" role="tab" type="button" id="tab-text" aria-controls="panel-text" aria-selected="false">文字</button>
+      <button class="tab" role="tab" type="button" id="tab-wm" aria-controls="panel-wm" aria-selected="false">浮水印</button>
+      <button class="tab" role="tab" type="button" id="tab-layout" aria-controls="panel-layout" aria-selected="false">版面</button>
+      <button class="tab" role="tab" type="button" id="tab-out" aria-controls="panel-out" aria-selected="false">輸出</button>
+    </div>
+    <section class="tabpanel" role="tabpanel" id="panel-photo" aria-labelledby="tab-photo" hidden></section>
+    <section class="tabpanel" role="tabpanel" id="panel-text" aria-labelledby="tab-text" hidden></section>
+    <section class="tabpanel" role="tabpanel" id="panel-wm" aria-labelledby="tab-wm" hidden></section>
+    <section class="tabpanel" role="tabpanel" id="panel-layout" aria-labelledby="tab-layout" hidden></section>
+    <section class="tabpanel" role="tabpanel" id="panel-out" aria-labelledby="tab-out" hidden></section>
+  </main>
+</div>
+
+<div class="actions">
+  <button class="btn primary" id="btnPick" type="button">選擇照片</button>
+  <button class="btn primary" id="btnSave" type="button" hidden>輸出這張</button>
+  <button class="btn" id="btnAll" type="button" hidden>全部輸出</button>
+</div>
+<input type="file" id="fileInput" class="vh" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-card">
+    <div class="sheet-h"><h2 id="sheetTitle">輸出完成</h2><button class="btn small" id="sheetClose" type="button">關閉</button></div>
+    <div class="result"><img id="resImg" alt=""><div class="result-meta" id="resMeta"></div></div>
+    <div class="res-strip" id="resStrip" hidden></div>
+    <div class="btnrow"><button class="btn primary" id="resSave" type="button">存到相簿</button><button class="btn" id="resSaveAll" type="button" hidden>全部存到相簿</button></div>
+    <p class="hint" id="resHint"></p>
+    <p class="hint" id="resProgress" aria-live="polite"></p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="vendor/exifr.full.umd.js"></script>
+<script src="vendor/stackblur.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- constants ---------- */
+  var PREV_LONG = 2000;
+  var MAX_PHOTOS = 30;
+  var MAX_AREA = 16000000;
+  var LS = { settings: 'pframe.settings.v1', logo: 'pframe.logo.v1', wm: 'pframe.wmimg.v1', tab: 'pframe.tab.v1' };
+
+  var FONTS = [
+    ['system', '系統字（SF／蘋方）', '-apple-system, system-ui, "PingFang TC", "Helvetica Neue", Arial, sans-serif'],
+    ['helvetica', 'Helvetica Neue', '"Helvetica Neue", Helvetica, Arial, sans-serif'],
+    ['avenir', 'Avenir Next', '"Avenir Next", Avenir, Montserrat, sans-serif'],
+    ['futura', 'Futura', 'Futura, "Century Gothic", Montserrat, sans-serif'],
+    ['gill', 'Gill Sans', '"Gill Sans", "Gill Sans MT", Montserrat, sans-serif'],
+    ['optima', 'Optima', 'Optima, Candara, "Segoe UI", sans-serif'],
+    ['montserrat', 'Montserrat', 'Montserrat, "Avenir Next", sans-serif'],
+    ['bebas', 'Bebas Neue（窄體大寫）', '"Bebas Neue", Impact, "Arial Narrow", sans-serif'],
+    ['didot', 'Didot', 'Didot, "Bodoni 72", "Playfair Display", Georgia, serif'],
+    ['bodoni', 'Bodoni 72', '"Bodoni 72", Didot, "Playfair Display", Georgia, serif'],
+    ['playfair', 'Playfair Display', '"Playfair Display", Didot, Georgia, serif'],
+    ['baskerville', 'Baskerville', 'Baskerville, "Baskerville Old Face", Georgia, serif'],
+    ['georgia', 'Georgia', 'Georgia, "Times New Roman", serif'],
+    ['copperplate', 'Copperplate', 'Copperplate, "Copperplate Gothic Light", Georgia, serif'],
+    ['snell', 'Snell Roundhand（手寫）', '"Snell Roundhand", "Brush Script MT", cursive'],
+    ['mono', 'Menlo（等寬）', 'Menlo, "SF Mono", "IBM Plex Mono", Consolas, monospace']
+  ];
+  var FONT_CSS = {};
+  FONTS.forEach(function (f) { FONT_CSS[f[0]] = f[2]; });
+  var FONT_OPTS = FONTS.map(function (f) { return [f[0], f[1]]; });
+  var WEIGHTS = [[300, '細 300'], [400, '標準 400'], [500, '中 500'], [600, '半粗 600'], [700, '粗 700'], [800, '特粗 800'], [900, '最粗 900']];
+  var RATIOS = [['auto', '自動（依照片）'], ['1:1', '1:1 正方形'], ['4:5', '4:5 IG 直式'], ['3:4', '3:4'], ['2:3', '2:3'], ['9:16', '9:16 限時動態']];
+  var TOKENS = [['make', '品牌'], ['model', '機型'], ['f', '光圈'], ['iso', 'ISO'], ['ss', '快門'], ['fl', '焦距'], ['lens', '鏡頭'], ['date', '日期'], ['time', '時間']];
+  var TOKEN_KEY = { aperture: 'f', shutter: 'ss', focal: 'fl' };
+  TOKENS.forEach(function (t) { TOKEN_KEY[t[0]] = t[0]; TOKEN_KEY[t[1].toLowerCase()] = t[0]; });
+
+  var DEFAULTS = {
+    ratio: 'auto', side: 4, top: 4, bottom: 22, radius: 0, shadow: 35,
+    bg: 'blur', bgColor: '#121212', blur: 60, zoom: 1.3, tone: 28,
+    textColor: '#ffffff', align: 'center', textY: 0, gap: 1.1, textShadow: false,
+    lines: [
+      { on: true, tpl: '{品牌}', font: 'didot', weight: 700, size: 3.0, opacity: 100, spacing: 8, upper: true, logo: false, logoH: 3.4, logoTint: true },
+      { on: true, tpl: '{機型}', font: 'system', weight: 700, size: 2.3, opacity: 100, spacing: 0, upper: false },
+      { on: true, tpl: '{光圈}  {ISO}  {快門}', font: 'system', weight: 500, size: 1.45, opacity: 62, spacing: 3, upper: false }
+    ],
+    wm: { on: false, type: 'text', tpl: '© EN', font: 'system', weight: 600, size: 1.8, color: '#ffffff', opacity: 70, imgH: 6, pos: 'br', scope: 'photo', margin: 2.5, rotate: 0, tile: false, tileGap: 10 },
+    out: { long: 3072, format: 'jpg', quality: 92, space: 'auto' },
+    aliases: {}
+  };
+
+  /* ---------- small helpers ---------- */
+  function $(s, root) { return (root || document).querySelector(s); }
+  function $$(s, root) { return Array.prototype.slice.call((root || document).querySelectorAll(s)); }
+  function el(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k.slice(0, 2) === 'on' && typeof v === 'function') e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, '');
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(e, arguments[i]);
+    return e;
+  }
+  function append(e, kid) {
+    if (kid == null || kid === false) return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { append(e, k); }); return; }
+    e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
+  function merge(base, over) {
+    if (Array.isArray(base)) return base.map(function (b, i) { return over && over[i] !== undefined ? merge(b, over[i]) : b; });
+    if (isObj(base)) {
+      if (Object.keys(base).length === 0) return isObj(over) ? over : base;
+      var out = {};
+      Object.keys(base).forEach(function (k) { out[k] = over && over[k] !== undefined ? merge(base[k], over[k]) : base[k]; });
+      return out;
+    }
+    return typeof over === typeof base ? over : base;
+  }
+  function getPath(o, p) { return p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); }
+  function setPath(o, p, v) { var ks = p.split('.'); var last = ks.pop(); var t = ks.reduce(function (a, k) { return a[k]; }, o); t[last] = v; }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function trimNum(v, d) { return String(+Number(v).toFixed(d)); }
+  function nextFrame() { return new Promise(function (r) { requestAnimationFrame(function () { r(); }); }); }
+  function pct(v) { return (+v).toFixed(1) + '%'; }
+
+  /* ---------- settings ---------- */
+  function loadSettings() {
+    var saved = null;
+    try { saved = JSON.parse(lsGet(LS.settings) || 'null'); } catch (e) { saved = null; }
+    return merge(clone(DEFAULTS), saved || {});
+  }
+  var S = loadSettings();
+  var saveTimer = 0;
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(function () { lsSet(LS.settings, JSON.stringify(S)); }, 300); }
+
+  /* ---------- canvas & color space ---------- */
+  var P3_OK = (function () {
+    try {
+      var c = document.createElement('canvas');
+      var g = c.getContext('2d', { colorSpace: 'display-p3' });
+      return !!(g && g.getContextAttributes && g.getContextAttributes().colorSpace === 'display-p3');
+    } catch (e) { return false; }
+  })();
+  var UA = navigator.userAgent;
+  var IS_WEBKIT = /AppleWebKit/.test(UA) && !/Chrome\/|Chromium|Edg\/|Android/.test(UA);
+  var WORK_SPACE = P3_OK && IS_WEBKIT ? 'display-p3' : 'srgb';
+  function outSpace() {
+    var v = S.out.space;
+    if (!P3_OK || v === 'srgb') return 'srgb';
+    if (v === 'p3') return 'display-p3';
+    return IS_WEBKIT ? 'display-p3' : 'srgb';
+  }
+  function makeCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function ctx2d(c, space) { return c.getContext('2d', space === 'display-p3' ? { colorSpace: 'display-p3' } : undefined); }
+  function releaseCanvas(c) { if (c && typeof c.width === 'number' && c.getContext) { c.width = 0; c.height = 0; } }
+  function dims(src) { return { w: src.naturalWidth || src.width, h: src.naturalHeight || src.height }; }
+  function canvasToBlob(c, type, q) {
+    return new Promise(function (res, rej) {
+      try { c.toBlob(function (b) { if (b) res(b); else rej(new Error('encode')); }, type, q); } catch (e) { rej(e); }
+    });
+  }
+  function decodeBlob(blob) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () { resolve({ img: img, url: url }); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+  function dropImg(d) { if (!d) return; try { URL.revokeObjectURL(d.url); } catch (e) { /* ignore */ } d.img.src = ''; }
+  function imgFromUrl(url) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+  function bitmapFromBlob(blob) {
+    if (window.createImageBitmap) {
+      return createImageBitmap(blob).catch(function () { return viaImg(); });
+    }
+    return viaImg();
+    function viaImg() { return decodeBlob(blob).then(function (d) { URL.revokeObjectURL(d.url); return d.img; }); }
+  }
+  function closeBitmap(b) { if (b && typeof b.close === 'function') { try { b.close(); } catch (e) { /* ignore */ } } }
+  function makeThumb(src, size) {
+    var d = dims(src);
+    var k = size / Math.min(d.w, d.h);
+    var t = makeCanvas(size, size);
+    var g = t.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(src, (size - d.w * k) / 2, (size - d.h * k) / 2, d.w * k, d.h * k);
+    var url = t.toDataURL('image/jpeg', 0.75);
+    releaseCanvas(t);
+    return url;
+  }
+
+  /* ---------- EXIF ---------- */
+  var PICK = ['Make', 'Model', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'FocalLengthIn35mmFormat', 'LensModel', 'DateTimeOriginal', 'CreateDate'];
+  function readExif(file) {
+    if (!window.exifr || !file) return Promise.resolve({});
+    return window.exifr.parse(file, { pick: PICK }).then(function (t) { return t || {}; }).catch(function () { return {}; });
+  }
+  function fmtShutter(t) {
+    t = Number(t);
+    if (!t || !isFinite(t) || t <= 0) return '';
+    if (t >= 1) return trimNum(t, 1) + 's';
+    var r = 1 / t;
+    if (r >= 2 || Math.abs(r - Math.round(r)) < 0.05) return '1/' + Math.round(r) + 's';
+    return trimNum(t, 1) + 's';
+  }
+  function validDate(d) { return d instanceof Date && !isNaN(d.getTime()) ? d : null; }
+  function fmtExif(t) {
+    t = t || {};
+    var iso = Array.isArray(t.ISO) ? t.ISO[0] : t.ISO;
+    var fl35 = Number(t.FocalLengthIn35mmFormat), fl = Number(t.FocalLength);
+    var d = validDate(t.DateTimeOriginal) || validDate(t.CreateDate);
+    return {
+      make: String(t.Make || '').trim(),
+      model: String(t.Model || '').trim(),
+      f: Number(t.FNumber) > 0 ? 'F' + trimNum(t.FNumber, 2) : '',
+      iso: Number(iso) > 0 ? 'ISO ' + Math.round(iso) : '',
+      ss: fmtShutter(t.ExposureTime),
+      fl: fl35 > 0 ? Math.round(fl35) + 'mm' : (fl > 0 ? trimNum(fl, 1) + 'mm' : ''),
+      lens: String(t.LensModel || '').trim(),
+      date: d ? d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate()) : '',
+      time: d ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : ''
+    };
+  }
+  function exifShown(p) {
+    var v = Object.assign({}, p.exif);
+    if (p.rawModel && S.aliases[p.rawModel]) v.model = S.aliases[p.rawModel];
+    return v;
+  }
+  function valsFor(p) {
+    var v = exifShown(p);
+    TOKENS.forEach(function (t) {
+      var o = p.ov[t[0]];
+      if (o != null && String(o).trim() !== '') v[t[0]] = String(o).trim();
+    });
+    return v;
+  }
+  function resolveTpl(tpl, vals) {
+    var src = String(tpl == null ? '' : tpl);
+    var out = src.replace(/\{\s*([^{}]+?)\s*\}/g, function (m, name) {
+      var k = TOKEN_KEY[name.toLowerCase()];
+      return k ? (vals[k] || '') : m;
+    });
+    if (!/ {3,}/.test(src)) out = out.replace(/ {3,}/g, '  ');
+    return out.trim();
+  }
+
+  /* ---------- state ---------- */
+  var photos = [];
+  var currentId = null;
+  var currentPrev = null;
+  var sampleCanvas = null;
+  var logoImg = null, wmImg = null;
+  var downloads = null;
+  var uid = 0;
+  var previewCanvas, stageInner;
+
+  function currentPhoto() {
+    for (var i = 0; i < photos.length; i++) if (photos[i].id === currentId) return photos[i];
+    return null;
+  }
+
+  /* ---------- sample photo (drawn, not a real picture) ---------- */
+  function makeSample() {
+    var W = 1600, H = 1200;
+    var c = makeCanvas(W, H), g = c.getContext('2d');
+    var sky = g.createLinearGradient(0, 0, 0, 760);
+    sky.addColorStop(0, '#16224a'); sky.addColorStop(0.45, '#5b3f74'); sky.addColorStop(0.8, '#d9776a'); sky.addColorStop(1, '#f6b26b');
+    g.fillStyle = sky; g.fillRect(0, 0, W, 760);
+    var sun = g.createRadialGradient(1060, 700, 8, 1060, 700, 520);
+    sun.addColorStop(0, 'rgba(255,244,214,1)'); sun.addColorStop(0.07, 'rgba(255,226,170,0.95)');
+    sun.addColorStop(0.25, 'rgba(255,170,110,0.35)'); sun.addColorStop(1, 'rgba(255,150,100,0)');
+    g.fillStyle = sun; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#3a2a4f';
+    g.beginPath(); g.moveTo(0, 690); g.bezierCurveTo(240, 600, 420, 640, 620, 700); g.bezierCurveTo(760, 735, 860, 730, 960, 760); g.lineTo(0, 760); g.closePath(); g.fill();
+    g.fillStyle = '#2a1f3d';
+    g.beginPath(); g.moveTo(1180, 760); g.bezierCurveTo(1300, 690, 1440, 660, 1600, 640); g.lineTo(1600, 760); g.closePath(); g.fill();
+    var sea = g.createLinearGradient(0, 760, 0, H);
+    sea.addColorStop(0, '#c97d6a'); sea.addColorStop(0.35, '#6c4a6e'); sea.addColorStop(1, '#161c38');
+    g.fillStyle = sea; g.fillRect(0, 760, W, H - 760);
+    for (var i = 0; i < 90; i++) {
+      var y = 768 + Math.pow(i / 90, 1.6) * 420;
+      var spread = 30 + i * 2.2;
+      var w = spread * (0.4 + ((i * 37) % 11) / 11);
+      var x = 1060 - w / 2 + (((i * 53) % 17) - 8) * 3;
+      g.fillStyle = 'rgba(255,220,170,' + (0.55 - i / 200).toFixed(3) + ')';
+      g.fillRect(x, y, w, 2 + (i % 3));
+    }
+    g.fillStyle = '#0f1226';
+    g.beginPath(); g.moveTo(0, H); g.lineTo(0, 1010); g.bezierCurveTo(160, 980, 300, 1040, 430, 1090); g.lineTo(560, H); g.closePath(); g.fill();
+    return c;
+  }
+  function addSample() {
+    if (!sampleCanvas) sampleCanvas = makeSample();
+    photos = [{
+      id: ++uid, name: '', sample: true, file: null, w: 1600, h: 1200, rawModel: '', hasExif: true, ov: {},
+      exif: { make: 'Apple', model: 'iPhone 15 Pro Max', f: 'F1.78', iso: 'ISO 80', ss: '1/120s', fl: '24mm', lens: 'iPhone 15 Pro Max back triple camera 6.765mm f/1.78', date: '2026.11.21', time: '17:42' },
+      thumb: makeThumb(sampleCanvas, 168)
+    }];
+    currentId = photos[0].id;
+    currentPrev = sampleCanvas;
+  }
+
+  /* ---------- layout & drawing ---------- */
+  function ratioOf(r) {
+    if (!r || r === 'auto') return 0;
+    var p = String(r).split(':').map(Number);
+    return p[0] > 0 && p[1] > 0 ? p[0] / p[1] : 0;
+  }
+  function layout(iw, ih, s) {
+    var W = 1000;
+    var side = s.side / 100 * W, top = s.top / 100 * W, bottom = s.bottom / 100 * W;
+    var r = ratioOf(s.ratio), H, P;
+    if (!r) {
+      var pw = Math.max(10, W - 2 * side), ph = pw * ih / iw;
+      H = top + ph + bottom;
+      P = { x: (W - pw) / 2, y: top, w: pw, h: ph };
+    } else {
+      H = W / r;
+      var bw = Math.max(10, W - 2 * side), bh = Math.max(10, H - 2 * top - bottom);
+      var k = Math.min(bw / iw, bh / ih);
+      var w2 = iw * k, h2 = ih * k;
+      var y = Math.max(top, (H - (h2 + bottom)) / 2);
+      P = { x: (W - w2) / 2, y: y, w: w2, h: h2 };
+    }
+    return { W: W, H: H, photo: P, text: { x: P.x, y: P.y + P.h, w: P.w, h: Math.max(bottom, 1) } };
+  }
+  function outSize(L, long) {
+    var scale = long / Math.max(L.W, L.H), capped = false;
+    if (L.W * L.H * scale * scale > MAX_AREA) { scale = Math.sqrt(MAX_AREA / (L.W * L.H)); capped = true; }
+    return { scale: scale, w: Math.max(1, Math.round(L.W * scale)), h: Math.max(1, Math.round(L.H * scale)), capped: capped };
+  }
+  function pathRound(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    if (r <= 0.01) { ctx.rect(x, y, w, h); return; }
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  var blurCache = new Map();
+  function clearBlurCache() { blurCache.forEach(function (c) { releaseCanvas(c); }); blurCache.clear(); }
+  function softBlurFallback(c, g) {
+    var t = makeCanvas(Math.max(2, Math.round(c.width / 6)), Math.max(2, Math.round(c.height / 6)));
+    var tg = t.getContext('2d');
+    tg.imageSmoothingQuality = 'high';
+    tg.drawImage(c, 0, 0, t.width, t.height);
+    g.clearRect(0, 0, c.width, c.height);
+    g.drawImage(t, 0, 0, c.width, c.height);
+    releaseCanvas(t);
+  }
+  function drawBlurBg(ctx, bgSrc, fullSrc, w, h, s, opt) {
+    var R = s.blur / 100 * 0.07 * Math.min(w, h);
+    var src = R < 1 ? fullSrc : bgSrc;
+    var d0 = dims(src);
+    var cover = Math.max(w / d0.w, h / d0.h) * s.zoom;
+    var dw = d0.w * cover, dh = d0.h * cover, dx = (w - dw) / 2, dy = (h - dh) / 2;
+    if (R < 1) { ctx.drawImage(src, dx, dy, dw, dh); return; }
+    var f = Math.max(1, R / 10);
+    var sw = Math.max(4, Math.round(w / f)), sh = Math.max(4, Math.round(h / f));
+    var key = opt.cacheKey ? opt.cacheKey + '|' + sw + 'x' + sh + '|' + s.blur + '|' + s.zoom : '';
+    var small = key ? blurCache.get(key) : null;
+    if (!small) {
+      small = makeCanvas(sw, sh);
+      var g = ctx2d(small, opt.space);
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = 'high';
+      var fx = sw / w, fy = sh / h;
+      g.drawImage(src, dx * fx, dy * fy, dw * fx, dh * fy);
+      var r = Math.max(1, Math.min(200, Math.round(R / f)));
+      if (window.StackBlur && window.StackBlur.imageDataRGB) {
+        var id = g.getImageData(0, 0, sw, sh);
+        window.StackBlur.imageDataRGB(id, 0, 0, sw, sh, r);
+        g.putImageData(id, 0, 0);
+      } else {
+        softBlurFallback(small, g);
+      }
+      if (key) {
+        if (blurCache.size > 8) { var first = blurCache.keys().next().value; releaseCanvas(blurCache.get(first)); blurCache.delete(first); }
+        blurCache.set(key, small);
+      }
+    }
+    ctx.drawImage(small, 0, 0, w, h);
+    if (!key) releaseCanvas(small);
+  }
+  var grainTile = null;
+  function drawGrain(ctx, w, h) {
+    if (!grainTile) {
+      grainTile = makeCanvas(96, 96);
+      var g = grainTile.getContext('2d');
+      var id = g.createImageData(96, 96);
+      for (var i = 0; i < id.data.length; i += 4) {
+        var v = (Math.random() * 255) | 0;
+        id.data[i] = id.data[i + 1] = id.data[i + 2] = v;
+        id.data[i + 3] = 255;
+      }
+      g.putImageData(id, 0, 0);
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.04;
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.fillStyle = ctx.createPattern(grainTile, 'repeat');
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
+  var tintCanvas = null, tintColor = '';
+  function logoFor(color, tint) {
+    if (!logoImg) return null;
+    if (!tint) return logoImg;
+    if (tintCanvas && tintColor === color) return tintCanvas;
+    var d = dims(logoImg);
+    if (tintCanvas) releaseCanvas(tintCanvas);
+    tintCanvas = makeCanvas(d.w, d.h);
+    var g = tintCanvas.getContext('2d');
+    g.drawImage(logoImg, 0, 0);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = color;
+    g.fillRect(0, 0, d.w, d.h);
+    tintColor = color;
+    return tintCanvas;
+  }
+  function textItems(s, vals, L) {
+    var out = [];
+    s.lines.forEach(function (l, i) {
+      if (!l.on) return;
+      if (i === 0 && l.logo && logoImg) {
+        var img = logoFor(s.textColor, l.logoTint), d = dims(img);
+        var lh = l.logoH / 100 * L.W;
+        out.push({ kind: 'img', img: img, h: lh, w: lh * d.w / d.h, alpha: l.opacity / 100 });
+        return;
+      }
+      var text = resolveTpl(l.tpl, vals);
+      if (l.upper) text = text.toUpperCase();
+      if (!text) return;
+      var size = l.size / 100 * L.W;
+      out.push({ kind: 'text', text: text, h: size * 1.18, font: l.weight + ' ' + size.toFixed(3) + 'px ' + (FONT_CSS[l.font] || FONT_CSS.system), sp: l.spacing / 100 * size, alpha: l.opacity / 100 });
+    });
+    return out;
+  }
+  function drawSpaced(ctx, text, x, y, sp, align) {
+    if (Math.abs(sp) < 0.01) { ctx.textAlign = align; ctx.fillText(text, x, y); return; }
+    var chars = Array.from(text);
+    var ws = chars.map(function (c) { return ctx.measureText(c).width; });
+    var total = ws.reduce(function (a, b) { return a + b; }, 0) + sp * (chars.length - 1);
+    var cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+    ctx.textAlign = 'left';
+    chars.forEach(function (c, i) { ctx.fillText(c, cx, y); cx += ws[i] + sp; });
+  }
+  function drawTextBlock(ctx, s, L, vals, k) {
+    var items = textItems(s, vals, L);
+    if (!items.length) return;
+    var gap = s.gap / 100 * L.W;
+    var total = items.reduce(function (a, it) { return a + it.h; }, 0) + gap * (items.length - 1);
+    var T = L.text;
+    var y = T.y + T.h / 2 + (s.textY / 100) * (T.h / 2) - total / 2;
+    var x = s.align === 'left' ? T.x : s.align === 'right' ? T.x + T.w : T.x + T.w / 2;
+    ctx.save();
+    ctx.fillStyle = s.textColor;
+    if (s.textShadow) {
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 0.006 * L.W * k;
+      ctx.shadowOffsetY = 0.0015 * L.W * k;
+    }
+    items.forEach(function (it) {
+      ctx.globalAlpha = it.alpha;
+      if (it.kind === 'img') {
+        var ix = s.align === 'left' ? x : s.align === 'right' ? x - it.w : x - it.w / 2;
+        ctx.drawImage(it.img, ix, y, it.w, it.h);
+      } else {
+        ctx.font = it.font;
+        ctx.textBaseline = 'middle';
+        drawSpaced(ctx, it.text, x, y + it.h / 2, it.sp, s.align);
+      }
+      y += it.h + gap;
+    });
+    ctx.restore();
+  }
+  function drawWatermark(ctx, s, L, vals) {
+    var wm = s.wm;
+    if (!wm.on) return;
+    var isText = wm.type === 'text';
+    if (!isText && !wmImg) return;
+    var text = '';
+    if (isText) { text = resolveTpl(wm.tpl, vals); if (!text) return; }
+    var rect = wm.scope === 'photo' ? L.photo : { x: 0, y: 0, w: L.W, h: L.H };
+    var size = wm.size / 100 * L.W;
+    var ih = wm.imgH / 100 * L.W, iw = 0;
+    if (wmImg) { var di = dims(wmImg); iw = ih * di.w / di.h; }
+    ctx.save();
+    ctx.globalAlpha = wm.opacity / 100;
+    if (isText) { ctx.font = wm.weight + ' ' + size.toFixed(3) + 'px ' + (FONT_CSS[wm.font] || FONT_CSS.system); ctx.fillStyle = wm.color; }
+    if (wm.tile) {
+      ctx.beginPath(); ctx.rect(rect.x, rect.y, rect.w, rect.h); ctx.clip();
+      ctx.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      ctx.rotate(wm.rotate * Math.PI / 180);
+      var gapU = wm.tileGap / 100 * L.W;
+      var unitW = (isText ? ctx.measureText(text).width : iw) + gapU;
+      var unitH = (isText ? size * 1.2 : ih) + gapU * 0.8;
+      var R = Math.hypot(rect.w, rect.h) / 2 + Math.max(unitW, unitH);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var row = 0;
+      for (var yy = -R; yy <= R; yy += unitH, row++) {
+        var off = (row % 2) * unitW / 2;
+        for (var xx = -R - off; xx <= R; xx += unitW) {
+          if (isText) ctx.fillText(text, xx, yy);
+          else ctx.drawImage(wmImg, xx - iw / 2, yy - ih / 2, iw, ih);
+        }
+      }
+    } else {
+      var m = wm.margin / 100 * L.W;
+      var rowP = wm.pos.charAt(0), colP = wm.pos.charAt(1);
+      var x = colP === 'l' ? rect.x + m : colP === 'r' ? rect.x + rect.w - m : rect.x + rect.w / 2;
+      var y = rowP === 't' ? rect.y + m : rowP === 'b' ? rect.y + rect.h - m : rect.y + rect.h / 2;
+      ctx.translate(x, y);
+      ctx.rotate(wm.rotate * Math.PI / 180);
+      if (isText) {
+        ctx.textBaseline = rowP === 't' ? 'top' : rowP === 'b' ? 'bottom' : 'middle';
+        drawSpaced(ctx, text, 0, 0, 0, colP === 'l' ? 'left' : colP === 'r' ? 'right' : 'center');
+      } else {
+        var dx = colP === 'l' ? 0 : colP === 'r' ? -iw : -iw / 2;
+        var dy = rowP === 't' ? 0 : rowP === 'b' ? -ih : -ih / 2;
+        ctx.drawImage(wmImg, dx, dy, iw, ih);
+      }
+    }
+    ctx.restore();
+  }
+  function drawFrame(canvas, src, bgSrc, s, long, vals, opt) {
+    opt = opt || {};
+    var sd = dims(src);
+    var L = layout(sd.w, sd.h, s);
+    var O = outSize(L, long);
+    canvas.width = O.w;
+    canvas.height = O.h;
+    var ctx = ctx2d(canvas, opt.space);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (s.bg === 'solid') {
+      ctx.fillStyle = s.bgColor;
+      ctx.fillRect(0, 0, O.w, O.h);
+    } else {
+      drawBlurBg(ctx, bgSrc || src, src, O.w, O.h, s, opt);
+      if (s.tone) {
+        ctx.fillStyle = s.tone > 0 ? 'rgba(0,0,0,' + (s.tone / 100) + ')' : 'rgba(255,255,255,' + (-s.tone / 100) + ')';
+        ctx.fillRect(0, 0, O.w, O.h);
+      }
+      drawGrain(ctx, O.w, O.h);
+    }
+    var k = O.scale;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    var P = L.photo;
+    var rad = Math.min(s.radius / 100 * L.W, Math.min(P.w, P.h) / 2);
+    if (s.shadow > 0) {
+      var a = s.shadow / 100, OFF = L.W * 4;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,' + (0.2 + 0.45 * a).toFixed(3) + ')';
+      ctx.shadowBlur = a * 0.05 * O.w;
+      ctx.shadowOffsetX = OFF * k;
+      ctx.shadowOffsetY = a * 0.014 * O.w;
+      ctx.fillStyle = '#000';
+      pathRound(ctx, P.x - OFF, P.y, P.w, P.h, rad);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.save();
+    pathRound(ctx, P.x, P.y, P.w, P.h, rad);
+    ctx.clip();
+    ctx.drawImage(src, P.x, P.y, P.w, P.h);
+    ctx.restore();
+    drawTextBlock(ctx, s, L, vals, k);
+    drawWatermark(ctx, s, L, vals);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    return O;
+  }
+
+  /* ---------- fonts ---------- */
+  var fontsSeen = new Set();
+  function fontSpecs(s) {
+    var specs = [];
+    s.lines.forEach(function (l) { if (l.on) specs.push(l.weight + ' 40px ' + (FONT_CSS[l.font] || FONT_CSS.system)); });
+    if (s.wm.on && s.wm.type === 'text') specs.push(s.wm.weight + ' 40px ' + (FONT_CSS[s.wm.font] || FONT_CSS.system));
+    return specs;
+  }
+  function ensureFonts(s) {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var todo = fontSpecs(s).filter(function (x) { return !fontsSeen.has(x); });
+    if (!todo.length) return Promise.resolve();
+    var all = Promise.all(todo.map(function (x) { return document.fonts.load(x).catch(function () { return null; }); }));
+    var timeout = new Promise(function (r) { setTimeout(r, 2500); });
+    return Promise.race([all, timeout]).then(function () { todo.forEach(function (x) { fontsSeen.add(x); }); });
+  }
+
+  /* ---------- preview rendering ---------- */
+  var rq = false, gen = 0;
+  function requestRender() {
+    if (rq) return;
+    rq = true;
+    requestAnimationFrame(function () { rq = false; renderPreview(); });
+  }
+  function previewLong() {
+    var r = stageInner.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    return Math.round(Math.min(2200, Math.max(700, Math.max(r.width, r.height) * dpr)));
+  }
+  function renderPreview() {
+    var my = ++gen;
+    var p = currentPhoto();
+    if (!p || !currentPrev) return;
+    ensureFonts(S).then(function () {
+      if (my !== gen) return;
+      try {
+        drawFrame(previewCanvas, currentPrev, currentPrev, S, previewLong(), valsFor(p), { space: WORK_SPACE, cacheKey: 'p' + p.id });
+      } catch (e) { console.error(e); }
+    });
+  }
+
+  /* ---------- photos ---------- */
+  function ingest(file) {
+    var exifRaw = {};
+    return readExif(file).then(function (t) {
+      exifRaw = t;
+      return decodeBlob(file);
+    }).then(function (d) {
+      var dd = dims(d.img);
+      if (!dd.w || !dd.h) { dropImg(d); throw new Error('size'); }
+      var k = Math.min(1, PREV_LONG / Math.max(dd.w, dd.h));
+      var c = makeCanvas(Math.max(1, Math.round(dd.w * k)), Math.max(1, Math.round(dd.h * k)));
+      var g = ctx2d(c, WORK_SPACE);
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(d.img, 0, 0, c.width, c.height);
+      dropImg(d);
+      var thumb = makeThumb(c, 168);
+      return canvasToBlob(c, 'image/jpeg', 0.9).then(function (blob) {
+        releaseCanvas(c);
+        return {
+          id: ++uid, name: file.name || '', file: file, sample: false, w: dd.w, h: dd.h,
+          rawModel: String(exifRaw.Model || '').trim(),
+          hasExif: !!(exifRaw.FNumber || exifRaw.ExposureTime || exifRaw.ISO || exifRaw.Model),
+          exif: fmtExif(exifRaw), ov: {}, previewBlob: blob, thumb: thumb
+        };
+      });
+    });
+  }
+  function setCurrent(id) {
+    var p = null;
+    photos.forEach(function (x) { if (x.id === id) p = x; });
+    if (!p) return Promise.resolve();
+    currentId = id;
+    var getPrev = p.sample ? Promise.resolve(sampleCanvas) : bitmapFromBlob(p.previewBlob);
+    return getPrev.then(function (prev) {
+      if (currentId !== id) { if (prev !== sampleCanvas) closeBitmap(prev); return; }
+      var old = currentPrev;
+      currentPrev = prev;
+      if (old && old !== sampleCanvas && old !== prev) closeBitmap(old);
+      clearBlurCache();
+      renderStrip(); buildPhotoPanel(); refreshVisibility(); updateReadout(); updateActions(); updateSizeHint();
+      requestRender();
+    }).catch(function (e) { console.error(e); toast('這張照片的預覽開不起來'); });
+  }
+  function addFiles(files) {
+    files = Array.prototype.slice.call(files || []);
+    if (!files.length) return Promise.resolve();
+    var real = photos.filter(function (p) { return !p.sample; }).length;
+    var room = MAX_PHOTOS - real;
+    if (files.length > room) { toast('一次最多 ' + MAX_PHOTOS + ' 張，多的先略過'); files = files.slice(0, Math.max(0, room)); }
+    if (!files.length) return Promise.resolve();
+    var firstDone = false, failed = 0;
+    var chain = Promise.resolve();
+    files.forEach(function (file, i) {
+      chain = chain.then(function () {
+        showBusy('讀取 ' + (i + 1) + ' / ' + files.length);
+        return ingest(file).then(function (p) {
+          if (photos.length && photos[0].sample) photos = [];
+          photos.push(p);
+          if (!firstDone) { firstDone = true; return setCurrent(p.id); }
+          renderStrip(); updateActions();
+        }).catch(function (e) { console.warn(e); failed++; });
+      });
+    });
+    return chain.then(function () {
+      hideBusy();
+      updateActions();
+      if (failed) toast(failed + ' 張照片開不起來，可能是這個瀏覽器不支援它的格式');
+    });
+  }
+  function removePhoto(id) {
+    var i = -1;
+    photos.forEach(function (p, j) { if (p.id === id) i = j; });
+    if (i < 0) return;
+    photos.splice(i, 1);
+    if (!photos.length) addSample();
+    var next = photos[Math.min(i, photos.length - 1)];
+    setCurrent(next.id);
+  }
+  function exportPhoto(p) {
+    var space = outSpace();
+    var d = null, bg = null;
+    var getSrc = p.sample ? Promise.resolve(null) : decodeBlob(p.file);
+    return getSrc.then(function (dd) {
+      d = dd;
+      return p.sample ? sampleCanvas : bitmapFromBlob(p.previewBlob);
+    }).then(function (b) {
+      bg = b;
+      return ensureFonts(S);
+    }).then(function () {
+      var src = p.sample ? sampleCanvas : d.img;
+      var c = makeCanvas(1, 1);
+      ctx2d(c, space);
+      drawFrame(c, src, bg, S, S.out.long, valsFor(p), { space: space });
+      var png = S.out.format === 'png';
+      var thumb = makeThumb(c, 120);
+      var size = { w: c.width, h: c.height };
+      return canvasToBlob(c, png ? 'image/png' : 'image/jpeg', S.out.quality / 100).then(function (blob) {
+        releaseCanvas(c);
+        return { blob: blob, name: outName(p), thumb: thumb, size: size, saved: false };
+      }, function (e) { releaseCanvas(c); throw e; });
+    }).finally(function () {
+      if (d) dropImg(d);
+      if (bg && bg !== sampleCanvas) closeBitmap(bg);
+    });
+  }
+  function outName(p) {
+    var ext = S.out.format === 'png' ? 'png' : 'jpg';
+    var base = (p.name || '').replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|\s]+/g, '_');
+    if (!base || /^image$/i.test(base)) {
+      var n = new Date();
+      base = 'frame_' + n.getFullYear() + pad(n.getMonth() + 1) + pad(n.getDate()) + '_' + pad(n.getHours()) + pad(n.getMinutes()) + pad(n.getSeconds()) + '_' + p.id;
+      return base + '.' + ext;
+    }
+    return base + '_frame.' + ext;
+  }
+
+  /* ---------- user images (logo / watermark) ---------- */
+  function setUserImage(which, img) {
+    if (which === 'logo') { logoImg = img; tintCanvas = null; tintColor = ''; }
+    else wmImg = img;
+  }
+  function loadUserImage(file, which) {
+    return decodeBlob(file).then(function (d) {
+      var dd = dims(d.img);
+      var k = Math.min(1, 1200 / Math.max(dd.w, dd.h));
+      var c = makeCanvas(Math.max(1, Math.round(dd.w * k)), Math.max(1, Math.round(dd.h * k)));
+      c.getContext('2d').drawImage(d.img, 0, 0, c.width, c.height);
+      dropImg(d);
+      var url = c.toDataURL('image/png');
+      releaseCanvas(c);
+      return imgFromUrl(url).then(function (img) {
+        setUserImage(which, img);
+        var stored = lsSet(which === 'logo' ? LS.logo : LS.wm, url);
+        if (which === 'logo') { S.lines[0].logo = true; S.lines[0].on = true; }
+        else { S.wm.type = 'image'; S.wm.on = true; }
+        if (!stored) toast('圖片可以用，但太大了，下次打開不會記住');
+        saveSoon(); rebuildPanels(); requestRender();
+      });
+    }).catch(function () { toast('這張圖開不起來，換一張試試'); });
+  }
+  function clearUserImage(which) {
+    setUserImage(which, null);
+    lsDel(which === 'logo' ? LS.logo : LS.wm);
+    if (which === 'logo') S.lines[0].logo = false; else S.wm.type = 'text';
+    saveSoon(); rebuildPanels(); requestRender();
+  }
+  function loadStoredImages() {
+    var jobs = [['logo', LS.logo], ['wm', LS.wm]].map(function (p) {
+      var url = lsGet(p[1]);
+      if (!url) return Promise.resolve();
+      return imgFromUrl(url).then(function (img) { setUserImage(p[0], img); }).catch(function () { lsDel(p[1]); });
+    });
+    return Promise.all(jobs);
+  }
+
+  /* ---------- controls ---------- */
+  var showRules = new Map();
+  function showIf(node, pred) { showRules.set(node, pred); return node; }
+  function refreshVisibility() {
+    showRules.forEach(function (pred, node) {
+      if (!node.isConnected) { showRules.delete(node); return; }
+      node.hidden = !pred();
+    });
+  }
+  function afterChange(path) {
+    if (path === 'wm.tile' && S.wm.tile && !S.wm.rotate) { S.wm.rotate = -30; buildWmPanel(); }
+  }
+  function changed(path) {
+    if (path) afterChange(path);
+    saveSoon(); refreshVisibility(); requestRender(); updateSizeHint();
+    if (path && /^aliases/.test(path)) updateReadout();
+  }
+  function idOf(path) { return 'c-' + path.replace(/\./g, '-'); }
+  function rangeRow(path, label, min, max, step, fmt) {
+    var id = idOf(path);
+    var input = el('input', { type: 'range', id: id, min: min, max: max, step: step });
+    input.value = getPath(S, path);
+    var out = el('output', { class: 'val', for: id });
+    function show() { out.textContent = fmt ? fmt(+input.value) : input.value; }
+    show();
+    input.addEventListener('input', function () { setPath(S, path, +input.value); show(); changed(path); });
+    return el('div', { class: 'row' }, el('label', { for: id, text: label }), input, out);
+  }
+  function selectRow(path, label, options, numeric) {
+    var id = idOf(path);
+    var sel = el('select', { id: id }, options.map(function (o) { return el('option', { value: String(o[0]) }, o[1]); }));
+    sel.value = String(getPath(S, path));
+    sel.addEventListener('change', function () { setPath(S, path, numeric ? +sel.value : sel.value); changed(path); });
+    return el('div', { class: 'row wide' }, el('label', { for: id, text: label }), sel);
+  }
+  function colorRow(path, label) {
+    var id = idOf(path);
+    var input = el('input', { type: 'color', id: id });
+    input.value = getPath(S, path);
+    var out = el('output', { class: 'val', for: id });
+    function show() { out.textContent = input.value.toUpperCase(); }
+    show();
+    input.addEventListener('input', function () { setPath(S, path, input.value); show(); changed(path); });
+    return el('div', { class: 'row' }, el('label', { for: id, text: label }), el('div', null, input), out);
+  }
+  function switchInput(path, aria) {
+    var id = idOf(path);
+    var input = el('input', { type: 'checkbox', role: 'switch', id: id, class: 'switch', 'aria-label': aria || null });
+    input.checked = !!getPath(S, path);
+    input.addEventListener('change', function () { setPath(S, path, input.checked); changed(path); });
+    return input;
+  }
+  function switchRow(path, label) {
+    var sw = switchInput(path);
+    return el('div', { class: 'row sw' }, el('label', { for: sw.id, text: label }), sw);
+  }
+  function segRow(path, label, options, numeric) {
+    var id = idOf(path);
+    var seg = el('div', { class: 'seg', role: 'radiogroup', 'aria-labelledby': id + '-l' });
+    options.forEach(function (o) {
+      var rid = id + '-' + String(o[0]).replace(/[^\w-]/g, '_');
+      var r = el('input', { type: 'radio', name: id, id: rid, value: String(o[0]), class: 'vh' });
+      r.checked = String(getPath(S, path)) === String(o[0]);
+      r.addEventListener('change', function () { if (r.checked) { setPath(S, path, numeric ? +o[0] : o[0]); changed(path); } });
+      seg.append(r, el('label', { for: rid, text: o[1] }));
+    });
+    return el('div', { class: 'row wide' }, el('span', { class: 'lbl', id: id + '-l', text: label }), seg);
+  }
+  function insertToken(input, tok) {
+    var c = input._caret || [input.value.length, input.value.length];
+    var s0 = Math.min(c[0], input.value.length), e0 = Math.min(c[1], input.value.length);
+    input.setRangeText(tok, s0, e0, 'end');
+    input._caret = [input.selectionStart, input.selectionEnd];
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function textRow(path, label) {
+    var id = idOf(path);
+    var input = el('input', { type: 'text', id: id, autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'done' });
+    input.value = getPath(S, path);
+    function remember() { input._caret = [input.selectionStart, input.selectionEnd]; }
+    ['keyup', 'click', 'select', 'blur'].forEach(function (ev) { input.addEventListener(ev, remember); });
+    input.addEventListener('input', function () { setPath(S, path, input.value); changed(path); });
+    var chips = el('div', { class: 'chips', role: 'group', 'aria-label': '插入參數' }, TOKENS.map(function (t) {
+      return el('button', { type: 'button', class: 'chip', onclick: function () { insertToken(input, '{' + t[1] + '}'); } }, t[1]);
+    }));
+    return el('div', { class: 'textrow' }, el('div', { class: 'row wide' }, el('label', { for: id, text: label }), input), chips);
+  }
+  function card(title, rows, togglePath) {
+    var h = el('div', { class: 'card-h' }, el('h2', { text: title }));
+    var body = el('div', { class: 'card-body' }, rows);
+    if (togglePath) {
+      h.append(switchInput(togglePath, '顯示：' + title));
+      showIf(body, function () { return !!getPath(S, togglePath); });
+    }
+    return el('section', { class: 'card' }, h, body);
+  }
+  function fileButton(id, label, onFile) {
+    var input = el('input', { type: 'file', id: id, accept: 'image/png,image/webp,image/svg+xml,image/jpeg,image/*', class: 'vh', tabindex: '-1', 'aria-hidden': 'true' });
+    input.addEventListener('change', function () {
+      var f = input.files && input.files[0];
+      input.value = '';
+      if (f) onFile(f);
+    });
+    var btn = el('button', { type: 'button', class: 'btn small', onclick: function () { input.click(); } }, label);
+    return [btn, input];
+  }
+
+  /* ---------- panels ---------- */
+  function buildPhotoPanel() {
+    var panel = $('#panel-photo');
+    var p = currentPhoto();
+    if (!p) { panel.replaceChildren(); return; }
+    var shown = exifShown(p);
+    var head = el('section', { class: 'card' },
+      el('div', { class: 'card-h' },
+        el('h2', { text: p.sample ? '範例照片' : (p.name || '這張照片') }),
+        p.sample ? null : el('button', { type: 'button', class: 'btn small', onclick: function () { removePhoto(p.id); } }, '移除這張')),
+      el('p', { class: 'hint', text: p.sample
+        ? '這是畫出來的範例。按下方「選擇照片」從相簿挑原始照片，可以一次選多張，每張會用自己的參數。'
+        : (p.hasExif
+          ? '已讀到拍攝參數。下面欄位留空就用照片裡的資料，填了只改這一張。'
+          : '這張沒讀到拍攝參數。截圖，或經過 LINE、IG、Messenger 傳過的照片常被拿掉，可以在下面手動填。') })
+    );
+    var fields = el('div', { class: 'fields' });
+    var aliasBox = el('div', { class: 'alias' });
+    function renderAlias() {
+      aliasBox.replaceChildren();
+      if (!p.rawModel) return;
+      var alias = S.aliases[p.rawModel];
+      var typed = String(p.ov.model || '').trim();
+      if (alias) {
+        aliasBox.append(el('span', { text: '機型代號 ' + p.rawModel + ' 會顯示成「' + alias + '」' }),
+          el('button', { type: 'button', class: 'linkbtn', onclick: function () { delete S.aliases[p.rawModel]; saveSoon(); buildPhotoPanel(); updateReadout(); requestRender(); } }, '取消'));
+      } else if (typed && typed !== p.rawModel) {
+        aliasBox.append(el('button', { type: 'button', class: 'btn small', onclick: function () {
+          S.aliases[p.rawModel] = typed; p.ov.model = ''; saveSoon(); buildPhotoPanel(); updateReadout(); requestRender();
+        } }, '以後 ' + p.rawModel + ' 都顯示成「' + typed + '」'));
+      }
+    }
+    TOKENS.forEach(function (t) {
+      var k = t[0], id = 'ov-' + k;
+      var input = el('input', { type: 'text', id: id, placeholder: shown[k] || '—', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'done' });
+      input.value = p.ov[k] || '';
+      input.addEventListener('input', function () { p.ov[k] = input.value; if (k === 'model') renderAlias(); updateReadout(); requestRender(); });
+      fields.append(el('div', { class: 'field' + (k === 'lens' ? ' span2' : '') }, el('label', { for: id, text: t[1] }), input));
+    });
+    renderAlias();
+    var info = el('section', { class: 'card' },
+      el('div', { class: 'card-h' }, el('h2', { text: '這張的參數' }),
+        el('button', { type: 'button', class: 'linkbtn', onclick: function () { p.ov = {}; buildPhotoPanel(); updateReadout(); requestRender(); } }, '全部改回原始資料')),
+      fields, aliasBox,
+      el('p', { class: 'hint', text: '灰色字是照片裡讀到的資料。機型是代號（例如小米、Sony 常見）時，填上名稱後可以設定以後自動換成這個名字。' })
+    );
+    panel.replaceChildren(head, info);
+  }
+  function buildTextPanel() {
+    var panel = $('#panel-text');
+    var global = card('整體', [
+      colorRow('textColor', '文字顏色'),
+      segRow('align', '對齊', [['left', '靠左'], ['center', '置中'], ['right', '靠右']]),
+      rangeRow('textY', '上下位置', -100, 100, 1, function (v) { return v > 0 ? '下 ' + v : v < 0 ? '上 ' + (-v) : '0'; }),
+      rangeRow('gap', '行距', 0, 5, 0.05, pct),
+      switchRow('textShadow', '文字陰影（淺色背景時好讀）')
+    ]);
+    var titles = ['第 1 行・品牌／Logo', '第 2 行・機型', '第 3 行・參數'];
+    panel.replaceChildren(global, lineCard(0, titles[0]), lineCard(1, titles[1]), lineCard(2, titles[2]));
+  }
+  function lineCard(i, title) {
+    var b = 'lines.' + i;
+    function isLogo() { return i === 0 && !!logoImg && !!S.lines[0].logo; }
+    function notLogo() { return !isLogo(); }
+    var rows = [];
+    if (i === 0) {
+      var fb = fileButton('logoFile', logoImg ? '換 Logo 圖片' : '上傳 Logo 圖片', function (f) { loadUserImage(f, 'logo'); });
+      rows.push(
+        el('div', { class: 'row wide' }, el('span', { class: 'lbl', text: 'Logo' }),
+          el('div', { class: 'btnrow' }, fb[0], logoImg ? el('button', { type: 'button', class: 'btn small', onclick: function () { clearUserImage('logo'); } }, '移除') : null, fb[1])),
+        showIf(switchRow('lines.0.logo', '用 Logo 取代文字'), function () { return !!logoImg; }),
+        showIf(rangeRow('lines.0.logoH', 'Logo 高度', 1, 12, 0.05, pct), isLogo),
+        showIf(switchRow('lines.0.logoTint', 'Logo 染成文字顏色'), isLogo)
+      );
+    }
+    rows.push(
+      showIf(textRow(b + '.tpl', '內容'), notLogo),
+      showIf(selectRow(b + '.font', '字體', FONT_OPTS), notLogo),
+      showIf(selectRow(b + '.weight', '粗細', WEIGHTS, true), notLogo),
+      showIf(rangeRow(b + '.size', '大小', 0.5, 7, 0.05, pct), notLogo),
+      rangeRow(b + '.opacity', '不透明度', 5, 100, 1, function (v) { return v + '%'; }),
+      showIf(rangeRow(b + '.spacing', '字距', -5, 80, 1, function (v) { return (v / 100).toFixed(2) + 'em'; }), notLogo),
+      showIf(switchRow(b + '.upper', '英文全部大寫'), notLogo)
+    );
+    if (i === 0) rows.push(el('p', { class: 'hint', text: 'Logo 請用你自己的去背 PNG 圖片。沒有上傳時，這一行就顯示文字。' }));
+    return card(title, rows, b + '.on');
+  }
+  function posRow() {
+    var name = 'c-wm-pos';
+    var names = { tl: '左上', tc: '上方置中', tr: '右上', ml: '左側置中', mc: '正中央', mr: '右側置中', bl: '左下', bc: '下方置中', br: '右下' };
+    var grid = el('div', { class: 'grid9', role: 'radiogroup', 'aria-labelledby': name + '-l' });
+    ['tl', 'tc', 'tr', 'ml', 'mc', 'mr', 'bl', 'bc', 'br'].forEach(function (v) {
+      var id = name + '-' + v;
+      var r = el('input', { type: 'radio', name: name, id: id, value: v, class: 'vh' });
+      r.checked = S.wm.pos === v;
+      r.addEventListener('change', function () { if (r.checked) { S.wm.pos = v; changed('wm.pos'); } });
+      grid.append(r, el('label', { for: id, title: names[v], 'aria-label': names[v] }));
+    });
+    return el('div', { class: 'row wide' }, el('span', { class: 'lbl', id: name + '-l', text: '位置' }), grid);
+  }
+  function buildWmPanel() {
+    var panel = $('#panel-wm');
+    function isText() { return S.wm.type === 'text'; }
+    var fb = fileButton('wmFile', wmImg ? '換圖片' : '上傳圖片', function (f) { loadUserImage(f, 'wm'); });
+    var imgRow = el('div', { class: 'row wide' }, el('span', { class: 'lbl', text: '圖片' }),
+      el('div', { class: 'btnrow' }, fb[0], wmImg ? el('button', { type: 'button', class: 'btn small', onclick: function () { clearUserImage('wm'); } }, '移除') : null, fb[1]));
+    panel.replaceChildren(card('浮水印', [
+      segRow('wm.type', '類型', [['text', '文字'], ['image', '圖片']]),
+      showIf(textRow('wm.tpl', '內容'), isText),
+      showIf(selectRow('wm.font', '字體', FONT_OPTS), isText),
+      showIf(selectRow('wm.weight', '粗細', WEIGHTS, true), isText),
+      showIf(rangeRow('wm.size', '大小', 0.5, 10, 0.05, pct), isText),
+      showIf(colorRow('wm.color', '顏色'), isText),
+      showIf(imgRow, function () { return !isText(); }),
+      showIf(rangeRow('wm.imgH', '圖片高度', 1, 30, 0.1, pct), function () { return !isText() && !!wmImg; }),
+      rangeRow('wm.opacity', '不透明度', 5, 100, 1, function (v) { return v + '%'; }),
+      segRow('wm.scope', '範圍', [['photo', '照片上'], ['canvas', '整張圖']]),
+      showIf(posRow(), function () { return !S.wm.tile; }),
+      showIf(rangeRow('wm.margin', '邊距', 0, 20, 0.1, pct), function () { return !S.wm.tile; }),
+      rangeRow('wm.rotate', '旋轉', -90, 90, 1, function (v) { return v + '°'; }),
+      switchRow('wm.tile', '平鋪整面（防盜用）'),
+      showIf(rangeRow('wm.tileGap', '平鋪間距', 2, 40, 0.5, pct), function () { return !!S.wm.tile; }),
+      showIf(el('p', { class: 'hint', text: '圖片浮水印建議用去背 PNG，例如簽名或個人標誌。' }), function () { return !isText(); })
+    ], 'wm.on'));
+  }
+  function buildLayoutPanel() {
+    var panel = $('#panel-layout');
+    function blur() { return S.bg === 'blur'; }
+    panel.replaceChildren(
+      card('畫面', [
+        selectRow('ratio', '比例', RATIOS),
+        rangeRow('side', '左右留白', 0, 15, 0.1, pct),
+        rangeRow('top', '上方留白', 0, 15, 0.1, pct),
+        rangeRow('bottom', '文字區高度', 0, 45, 0.1, pct)
+      ]),
+      card('照片', [
+        rangeRow('radius', '圓角', 0, 6, 0.05, pct),
+        rangeRow('shadow', '陰影', 0, 100, 1, function (v) { return String(v); })
+      ]),
+      card('背景', [
+        segRow('bg', '背景', [['blur', '模糊照片'], ['solid', '純色']]),
+        showIf(rangeRow('blur', '模糊程度', 0, 100, 1, function (v) { return String(v); }), blur),
+        showIf(rangeRow('zoom', '放大', 1, 2.5, 0.01, function (v) { return v.toFixed(2) + '×'; }), blur),
+        showIf(rangeRow('tone', '亮暗', -60, 80, 1, function (v) { return v > 0 ? '暗 ' + v : v < 0 ? '亮 ' + (-v) : '0'; }), blur),
+        showIf(colorRow('bgColor', '顏色'), function () { return S.bg === 'solid'; }),
+        showIf(el('p', { class: 'hint', text: '純色背景如果選淺色，記得到「文字」把文字顏色改深。' }), function () { return S.bg === 'solid'; })
+      ])
+    );
+  }
+  function buildOutPanel() {
+    var panel = $('#panel-out');
+    var rows = [
+      segRow('out.long', '長邊', [[2048, '2048'], [3072, '3072'], [4096, '4096']], true),
+      segRow('out.format', '格式', [['jpg', 'JPG'], ['png', 'PNG']]),
+      showIf(rangeRow('out.quality', 'JPG 品質', 70, 100, 1, function (v) { return String(v); }), function () { return S.out.format === 'jpg'; })
+    ];
+    if (P3_OK) rows.push(segRow('out.space', '色彩', [['auto', '自動'], ['p3', 'Display P3'], ['srgb', 'sRGB']]));
+    rows.push(el('p', { class: 'hint', id: 'outSize' }));
+    var reset = el('button', { type: 'button', class: 'btn small' }, '重設所有設定');
+    var armed = 0;
+    reset.addEventListener('click', function () {
+      if (!armed) {
+        reset.textContent = '再按一次確認重設';
+        reset.classList.add('danger');
+        armed = setTimeout(function () { armed = 0; reset.textContent = '重設所有設定'; reset.classList.remove('danger'); }, 4000);
+        return;
+      }
+      clearTimeout(armed); armed = 0;
+      var aliases = S.aliases;
+      S = clone(DEFAULTS);
+      S.aliases = aliases;
+      saveSoon(); rebuildPanels(); requestRender(); updateReadout();
+      toast('已重設成預設值');
+    });
+    panel.replaceChildren(
+      card('輸出', rows),
+      card('設定', [
+        el('p', { class: 'hint', text: '調整會自動記在這支手機的這個 App 裡，下次打開還在；上傳的 Logo 和浮水印圖片也會記住。自動色彩在 iPhone 上會保留 P3 廣色域。照片只在手機上處理，不會上傳到任何地方。' }),
+        el('div', { class: 'btnrow' }, reset)
+      ])
+    );
+    updateSizeHint();
+  }
+  function rebuildPanels() {
+    buildPhotoPanel(); buildTextPanel(); buildWmPanel(); buildLayoutPanel(); buildOutPanel();
+    refreshVisibility();
+  }
+  function updateSizeHint() {
+    var e = document.getElementById('outSize');
+    var p = currentPhoto();
+    if (!e || !p) return;
+    var O = outSize(layout(p.w, p.h, S), S.out.long);
+    e.textContent = '這張輸出約 ' + O.w + ' × ' + O.h + ' 像素' + (O.capped ? '（已依瀏覽器上限自動縮小）' : '') + '。';
+  }
+
+  /* ---------- chrome ---------- */
+  var TABS = ['photo', 'text', 'wm', 'layout', 'out'];
+  function selectTab(name) {
+    if (TABS.indexOf(name) < 0) name = 'text';
+    TABS.forEach(function (t) {
+      var on = t === name;
+      var tab = document.getElementById('tab-' + t);
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      document.getElementById('panel-' + t).hidden = !on;
+    });
+    lsSet(LS.tab, name);
+    if (name === 'out') updateSizeHint();
+  }
+  function renderStrip() {
+    var strip = $('#strip');
+    var kids = photos.map(function (p, i) {
+      var b = el('button', { type: 'button', class: 'thumb', 'aria-label': p.sample ? '範例照片' : '第 ' + (i + 1) + ' 張', 'aria-current': String(p.id === currentId) });
+      b.style.backgroundImage = 'url("' + p.thumb + '")';
+      b.addEventListener('click', function () { if (p.id !== currentId) setCurrent(p.id); });
+      return b;
+    });
+    kids.push(el('button', { type: 'button', class: 'thumb add', 'aria-label': '加入照片', onclick: pickFiles }, '+'));
+    strip.replaceChildren.apply(strip, kids);
+  }
+  function updateReadout() {
+    var p = currentPhoto();
+    var r = $('#readout');
+    if (!p) { r.textContent = ''; return; }
+    var v = valsFor(p);
+    r.textContent = [v.model, v.f, v.iso, v.ss, v.fl].filter(Boolean).join('  ·  ') || '沒有拍攝參數';
+  }
+  function updateActions() {
+    var real = photos.filter(function (p) { return !p.sample; });
+    var pick = $('#btnPick');
+    pick.textContent = real.length ? '+ 照片' : '選擇照片';
+    pick.classList.toggle('primary', !real.length);
+    pick.classList.toggle('pick-more', !!real.length);
+    $('#btnSave').hidden = !real.length;
+    var all = $('#btnAll');
+    all.hidden = real.length < 2;
+    all.textContent = '全部 ' + real.length + ' 張';
+    var cp = currentPhoto();
+    $('#sampleBadge').hidden = !(cp && cp.sample);
+  }
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+  function showBusy(msg) { $('#busyText').textContent = msg; $('#busy').hidden = false; }
+  function hideBusy() { $('#busy').hidden = true; }
+  function pickFiles() { $('#fileInput').click(); }
+
+  /* ---------- export sheet ---------- */
+  var results = [], resIdx = 0, sheetOpen = false, exporting = false;
+  function openSheet(n) {
+    results.forEach(function (r) { URL.revokeObjectURL(r.url); });
+    results = []; resIdx = 0; sheetOpen = true;
+    $('#resImg').removeAttribute('src');
+    $('#resMeta').textContent = '';
+    $('#resStrip').replaceChildren();
+    $('#resStrip').hidden = n < 2;
+    $('#sheetTitle').textContent = n > 1 ? '輸出 ' + n + ' 張' : '輸出這張';
+    $('#sheet').hidden = false;
+    document.body.classList.add('noscroll');
+    refreshSheetButtons();
+    $('#sheetClose').focus();
+  }
+  function closeSheet() {
+    sheetOpen = false;
+    $('#sheet').hidden = true;
+    document.body.classList.remove('noscroll');
+    $('#resImg').removeAttribute('src');
+    results.forEach(function (r) { URL.revokeObjectURL(r.url); });
+    results = [];
+    $('#resStrip').replaceChildren();
+    $('#resProgress').textContent = '';
+  }
+  function showResult(i) {
+    var r = results[i];
+    if (!r) return;
+    resIdx = i;
+    var img = $('#resImg');
+    img.src = r.url;
+    img.alt = r.name;
+    $('#resMeta').textContent = r.name + '  ·  ' + r.size.w + '×' + r.size.h + '  ·  ' + (r.blob.size / 1048576).toFixed(1) + ' MB';
+    $$('#resStrip button').forEach(function (b, j) { b.setAttribute('aria-current', String(j === i)); });
+    refreshSheetButtons();
+  }
+  var CAN_SHARE = (function () {
+    try {
+      if (!navigator.share || !navigator.canShare || typeof File !== 'function') return false;
+      return navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/jpeg' })], 'x.jpg', { type: 'image/jpeg' })] });
+    } catch (e) { return false; }
+  })();
+  function refreshSheetButtons() {
+    var save = $('#resSave'), all = $('#resSaveAll');
+    var r = results[resIdx];
+    save.hidden = false;
+    all.hidden = results.length < 2;
+    save.disabled = !r;
+    all.disabled = !results.length || exporting;
+    save.textContent = CAN_SHARE ? (r && r.saved ? '再存一次' : '存到相簿') : '下載這張';
+    all.textContent = CAN_SHARE ? '全部存到相簿（' + results.length + ' 張）' : '全部下載';
+    $('#resHint').textContent = CAN_SHARE
+      ? '按「存到相簿」後選「儲存影像」就會進照片，多張可以一次全部存。也可以長按圖片 →「加入照片」。'
+      : '這個瀏覽器不能直接分享，按「下載」存檔，或在圖片上按右鍵另存。';
+    $$('#resStrip button').forEach(function (b, j) { b.classList.toggle('saved', !!(results[j] && results[j].saved)); });
+  }
+  function shareResults(list) {
+    var files = list.map(function (r) { return new File([r.blob], r.name, { type: r.blob.type || 'image/jpeg' }); });
+    if (!CAN_SHARE || (navigator.canShare && !navigator.canShare({ files: files }))) return Promise.resolve('unavailable');
+    return navigator.share({ files: files }).then(function () { return 'saved'; }, function (e) { return e && e.name === 'AbortError' ? 'declined' : 'error'; });
+  }
+  function downloadResult(r) {
+    var a = document.createElement('a');
+    a.href = r.url; a.download = r.name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function exportList(list) {
+    if (!list.length || exporting) return;
+    exporting = true;
+    openSheet(list.length);
+    var chain = Promise.resolve();
+    list.forEach(function (p, i) {
+      chain = chain.then(function () {
+        if (!sheetOpen) return;
+        $('#resProgress').textContent = '輸出中 ' + (i + 1) + ' / ' + list.length + '…';
+        return nextFrame().then(nextFrame).then(function () { return exportPhoto(p); }).then(function (r) {
+          if (!sheetOpen) return;
+          r.url = URL.createObjectURL(r.blob);
+          results.push(r);
+          var idx = results.length - 1;
+          var b = el('button', { type: 'button', 'aria-label': '第 ' + (idx + 1) + ' 張成品' });
+          b.style.backgroundImage = 'url("' + r.thumb + '")';
+          b.addEventListener('click', function () { showResult(idx); });
+          $('#resStrip').append(b);
+          if (idx === 0) showResult(0); else refreshSheetButtons();
+        }).catch(function (e) {
+          console.error(e);
+          toast((p.name || '照片') + ' 輸出失敗，可以到「輸出」把長邊調小再試');
+        });
+      });
+    });
+    chain.then(function () {
+      exporting = false;
+      if (!sheetOpen) return;
+      $('#resProgress').textContent = results.length > 1 ? '完成，共 ' + results.length + ' 張。' : '';
+      refreshSheetButtons();
+    });
+  }
+
+  /* ---------- wiring ---------- */
+  function initDownloads() { /* standalone build: saving goes through the share sheet */ }
+  function wire() {
+    TABS.forEach(function (t, i) {
+      var tab = document.getElementById('tab-' + t);
+      tab.addEventListener('click', function () { selectTab(t); });
+      tab.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var n = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
+        selectTab(n);
+        document.getElementById('tab-' + n).focus();
+      });
+    });
+    $('#btnPick').addEventListener('click', pickFiles);
+    $('#fileInput').addEventListener('change', function () {
+      var input = $('#fileInput');
+      var files = Array.prototype.slice.call(input.files || []);
+      input.value = '';
+      addFiles(files);
+    });
+    $('#btnSave').addEventListener('click', function () { var p = currentPhoto(); if (p && !p.sample) exportList([p]); });
+    $('#btnAll').addEventListener('click', function () { exportList(photos.filter(function (p) { return !p.sample; })); });
+    $('#sheetClose').addEventListener('click', closeSheet);
+    $('#sheet').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheetOpen) closeSheet(); });
+    $('#resSave').addEventListener('click', function () {
+      var r = results[resIdx];
+      if (!r) return;
+      if (!CAN_SHARE) { downloadResult(r); r.saved = true; refreshSheetButtons(); return; }
+      shareResults([r]).then(function (st) {
+        if (st === 'saved') r.saved = true;
+        else if (st === 'error' || st === 'unavailable') toast('分享沒有成功，可以改用長按圖片 →「加入照片」');
+        refreshSheetButtons();
+      });
+    });
+    $('#resSaveAll').addEventListener('click', function () {
+      if (!results.length) return;
+      if (!CAN_SHARE) { results.forEach(function (r) { downloadResult(r); r.saved = true; }); refreshSheetButtons(); return; }
+      shareResults(results).then(function (st) {
+        if (st === 'saved') results.forEach(function (r) { r.saved = true; });
+        else if (st === 'error' || st === 'unavailable') toast('一次分享太多張沒有成功，可以點縮圖一張一張存');
+        refreshSheetButtons();
+      });
+    });
+    window.addEventListener('resize', requestRender);
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', requestRender);
+  }
+  function init() {
+    previewCanvas = $('#preview');
+    stageInner = $('#stageInner');
+    addSample();
+    wire();
+    rebuildPanels();
+    renderStrip();
+    updateActions();
+    updateReadout();
+    selectTab(lsGet(LS.tab) || 'text');
+    requestRender();
+    loadStoredImages().then(function () { rebuildPanels(); requestRender(); });
+    initDownloads();
+  }
+  init();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
