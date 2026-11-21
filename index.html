@@ -82,8 +82,8 @@ button,input,select{font:inherit;color:inherit;touch-action:manipulation}
 .thumb.add{display:grid;place-items:center;border:1.5px dashed var(--line);color:var(--muted);font-size:1.5rem;line-height:1;background:none}
 
 .panel{grid-area:panel;display:grid;gap:12px;min-width:0}
-.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
-.tab{border:0;background:none;padding:9px 2px;border-radius:9px;font-size:.92rem;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.tab{border:0;background:none;padding:9px 0;border-radius:9px;font-size:.9rem;color:var(--muted);cursor:pointer;white-space:nowrap}
 .tab[aria-selected="true"]{background:var(--surface);color:var(--fg);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
 .tabpanel{display:grid;gap:12px;min-width:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;min-width:0}
@@ -116,6 +116,15 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
 .grid9 label::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--muted)}
 .grid9 input:checked+label{background:var(--accent-soft);border-color:var(--accent)}
 .grid9 input:checked+label::after{background:var(--accent)}
+.fgroups{display:grid;gap:14px}
+.fgroup{display:grid;gap:8px}
+.fgroup-h{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.ftiles{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;min-width:0}
+.ftiles::-webkit-scrollbar{display:none}
+.ftile{flex:0 0 66px;display:grid;gap:5px;justify-items:center;align-content:start;padding:0;border:0;background:none;color:var(--fg);cursor:pointer;font-size:.74rem;line-height:1.25;text-align:center}
+.ftile canvas{width:66px;height:66px;border-radius:10px;border:2px solid transparent;background:var(--surface-2);display:block}
+.ftile[aria-pressed="true"] canvas{border-color:var(--accent)}
+.ftile[aria-pressed="true"] span{color:var(--accent);font-weight:600}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .field{display:grid;gap:4px;min-width:0}
 .field label{font-size:.8rem;color:var(--muted)}
@@ -185,12 +194,14 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
   <main class="panel">
     <div class="tabs" role="tablist" aria-label="調整項目">
       <button class="tab" role="tab" type="button" id="tab-photo" aria-controls="panel-photo" aria-selected="false">照片</button>
+      <button class="tab" role="tab" type="button" id="tab-filter" aria-controls="panel-filter" aria-selected="false">濾鏡</button>
       <button class="tab" role="tab" type="button" id="tab-text" aria-controls="panel-text" aria-selected="false">文字</button>
       <button class="tab" role="tab" type="button" id="tab-wm" aria-controls="panel-wm" aria-selected="false">浮水印</button>
       <button class="tab" role="tab" type="button" id="tab-layout" aria-controls="panel-layout" aria-selected="false">版面</button>
       <button class="tab" role="tab" type="button" id="tab-out" aria-controls="panel-out" aria-selected="false">輸出</button>
     </div>
     <section class="tabpanel" role="tabpanel" id="panel-photo" aria-labelledby="tab-photo" hidden></section>
+    <section class="tabpanel" role="tabpanel" id="panel-filter" aria-labelledby="tab-filter" hidden></section>
     <section class="tabpanel" role="tabpanel" id="panel-text" aria-labelledby="tab-text" hidden></section>
     <section class="tabpanel" role="tabpanel" id="panel-wm" aria-labelledby="tab-wm" hidden></section>
     <section class="tabpanel" role="tabpanel" id="panel-layout" aria-labelledby="tab-layout" hidden></section>
@@ -267,8 +278,66 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
     ],
     wm: { on: false, type: 'text', tpl: '© EN', font: 'system', weight: 600, size: 1.8, color: '#ffffff', opacity: 70, imgH: 6, pos: 'br', scope: 'photo', margin: 2.5, rotate: 0, tile: false, tileGap: 10 },
     out: { long: 3072, format: 'jpg', quality: 92, space: 'auto' },
+    flt: { preset: 'none', amount: 100, exposure: 0, contrast: 0, saturation: 0, temp: 0, tint: 0, fade: 0,
+      grain: 0, vignette: 0, glow: 0, sharpen: 0, leak: 0, bg: true,
+      stamp: false, stampAuto: false, stampColor: '#ff7a1a', stampPos: 'br', stampSize: 3.6 },
     aliases: {}
   };
+
+  /* ---------- filter presets (approximate looks tuned by eye, not the makers' own processing) ---------- */
+  var PRESETS = {
+    none: { name: '原色' },
+    cine: { name: '電影暖橙', color: { temp: 12, tint: 2, contrast: 14, hi: -20, sh: 10, sat: -22, vib: -5, fade: 6,
+      hsl: { red: { h: 6, s: -5 }, orange: { s: 10, l: 2 }, yellow: { h: -8, s: -15 }, green: { h: -32, s: -58, l: -14 }, aqua: { h: 5, s: -40, l: -10 }, blue: { h: -6, s: -30, l: -18 } },
+      split: { s: '#2f6f7a', sa: 0.12, h: '#ffb066', ha: 0.12 } }, fx: { grain: 14, grainSize: 1.1, vignette: 20 } },
+    jfilm: { name: '日系灰霧', color: { exposure: 0.15, temp: 8, tint: -3, contrast: -22, hi: -25, sh: 20, sat: -24,
+      hsl: { orange: { s: -5, l: 5 }, green: { h: 10, s: -25, l: 5 }, aqua: { s: -20 }, blue: { s: -25, l: 8 } },
+      lift: [0.06, 0.07, 0.075], gain: [0.98, 0.97, 0.94], split: { s: '#4f8f8a', sa: 0.10, h: '#ffd9a8', ha: 0.06 } }, fx: { grain: 22, grainSize: 1.4, vignette: 10, glow: 10 } },
+    bwwarm: { name: '黑白留暖光', color: { bw: true, mix: [0.35, 0.5, 0.15], keep: { h: 35, w: 32, a: 1 }, contrast: 18, hi: -10, sh: -5 }, fx: { grain: 18, grainSize: 1.3, vignette: 22 } },
+    route66: { name: '公路旅行', color: { temp: 18, tint: 4, contrast: 6, hi: -18, sh: 8, sat: -12, vib: 6,
+      hsl: { red: { h: 8, s: -5 }, orange: { s: 8, l: 4 }, yellow: { h: -6, s: 5 }, green: { h: -20, s: -40, l: -5 }, aqua: { h: -10, s: -25 }, blue: { h: -10, s: -20, l: -8 } },
+      lift: [0.05, 0.04, 0.03], gain: [1, 0.98, 0.92], split: { s: '#2e6a73', sa: 0.12, h: '#ffc277', ha: 0.10 } }, fx: { grain: 16, grainSize: 1.2, vignette: 18, glow: 6 } },
+    leica: { name: '徠卡經典風', color: { temp: -55, gamma: 1.06, hi: 20, sh: 28, sat: -26, gain: [1.05, 1.05, 1.05],
+      hsl: { red: { s: 8 }, green: { h: 14, s: 45, l: -2 }, blue: { s: 6, l: -4 } }, split: { s: '#6f8faa', sa: 0.06 } }, fx: { vignette: 22 } },
+    leicav: { name: '徠卡鮮豔風', color: { exposure: 0.05, temp: 3, contrast: 16, hi: -5, sh: 6, sat: 16, vib: 10,
+      hsl: { orange: { s: 4 }, green: { s: 8 }, blue: { s: 10, l: -4 } } }, fx: { vignette: 22 } },
+    grpos: { name: 'GR 正片風', color: { temp: 6, contrast: 30, hi: -6, sh: -8, sat: 18,
+      hsl: { red: { s: 12 }, orange: { s: 6 }, yellow: { h: -4, s: 8 }, green: { h: -6, s: 4, l: -8 }, blue: { h: -4, s: 8, l: -10 } },
+      split: { h: '#ffcf8a', ha: 0.05 } }, fx: { vignette: 15 } },
+    grneg: { name: 'GR 負片風', color: { temp: 2, tint: -2, contrast: -10, hi: -20, sh: 18, sat: -15,
+      hsl: { red: { s: -10 }, orange: { s: -5 }, green: { h: 12, s: -25 }, blue: { h: -8, s: -20 } },
+      lift: [0.03, 0.05, 0.06], split: { s: '#3d8a96', sa: 0.14, h: '#ffe1b8', ha: 0.05 } }, fx: { grain: 10 } },
+    chrome: { name: '經典正片風', color: { temp: -2, contrast: 16, hi: -12, sh: -14, sat: -30,
+      hsl: { red: { s: -15, l: -5 }, yellow: { s: -15 }, green: { h: -10, s: -20, l: -6 }, aqua: { s: -25 }, blue: { h: -6, s: -25, l: -6 } },
+      split: { s: '#4a6b7a', sa: 0.08 } }, fx: { vignette: 8 } },
+    cneg: { name: '經典負片風', color: { temp: 3, tint: 3, contrast: 22, hi: -15, sh: -6, sat: -12,
+      hsl: { red: { h: -4, s: 4 }, orange: { s: -6 }, yellow: { h: -10, s: -10 }, green: { h: 18, s: -20, l: -6 }, blue: { h: -10, s: -10, l: -8 } },
+      lift: [0.02, 0.045, 0.05], split: { s: '#2f7f78', sa: 0.14, h: '#ffb8a0', ha: 0.08 } }, fx: { grain: 8 } },
+    portra: { name: 'Portra 風', color: { exposure: 0.12, temp: 10, tint: 2, contrast: -8, hi: -22, sh: 16, sat: -10, vib: -6,
+      hsl: { red: { h: 6, s: -8 }, orange: { h: 2, s: 4, l: 6 }, yellow: { s: -10 }, green: { h: 8, s: -20, l: 4 }, blue: { h: -6, s: -20, l: 6 } },
+      lift: [0.04, 0.04, 0.05], gain: [1, 0.985, 0.95], split: { s: '#5f8f8f', sa: 0.06, h: '#ffd2a1', ha: 0.08 } }, fx: { grain: 18, grainSize: 1.1, vignette: 8 } },
+    gold: { name: 'Gold 風', color: { temp: 20, tint: 3, contrast: 12, hi: -15, sh: 6, sat: 6,
+      hsl: { red: { h: 6 }, orange: { s: 10 }, yellow: { h: -6, s: 12 }, green: { h: -14, s: -15 }, blue: { s: -20, l: -6 } },
+      lift: [0.04, 0.03, 0.015], split: { h: '#ffc46b', ha: 0.10 } }, fx: { grain: 20, grainSize: 1.3, vignette: 15 } },
+    cinestill: { name: 'CineStill 風', color: { temp: -22, tint: -2, contrast: 14, hi: -10, sh: 4, sat: 4,
+      hsl: { red: { s: 10 }, orange: { h: -6, s: 5 }, green: { h: 20, s: -20 }, aqua: { h: 5, s: 10 }, blue: { h: -10 } },
+      lift: [0, 0.03, 0.05], split: { s: '#1f6f8a', sa: 0.14, h: '#ffd3b0', ha: 0.04 } }, fx: { glow: 55, glowType: 'red', grain: 24, grainSize: 1.3 } },
+    expired: { name: '過期底片', color: { exposure: 0.1, temp: 8, tint: 12, contrast: -18, hi: -25, sh: 20, sat: -25,
+      hsl: { red: { h: 10 }, green: { h: 15, s: -35 }, blue: { h: 15, s: -30 } },
+      lift: [0.08, 0.05, 0.07], gain: [0.97, 0.93, 0.9], split: { s: '#6f5a8a', sa: 0.12, h: '#ffc28a', ha: 0.10 } }, fx: { grain: 40, grainSize: 1.8, vignette: 30, leak: 45 } },
+    trix: { name: 'Tri-X 風', color: { bw: true, mix: [0.25, 0.65, 0.10], contrast: 32, hi: -6, sh: -10 }, fx: { grain: 45, grainSize: 1.8, vignette: 15 } },
+    ccd: { name: 'CCD 數位感', color: { exposure: 0.1, temp: -8, tint: -4, contrast: 26, hi: 10, sh: -6, sat: 18, vib: 10,
+      hsl: { red: { h: -4, s: 10 }, orange: { s: -5 }, green: { h: 6, s: 10 }, aqua: { s: 15 }, blue: { h: 6, s: 15 } },
+      gain: [1, 1, 1.02] }, fx: { glow: 35, sharpen: 45, grain: 18, grainSize: 1, chroma: true, stamp: true } },
+    ccdflash: { name: 'CCD 夜閃', color: { exposure: 0.2, temp: -12, contrast: 34, hi: 12, sh: -20, sat: 10 },
+      fx: { glow: 30, sharpen: 40, vignette: 45, grain: 22, grainSize: 1, chroma: true, stamp: true } }
+  };
+  var PRESET_GROUPS = [
+    ['原色・我的風格', ['none', 'cine', 'jfilm', 'bwwarm', 'route66']],
+    ['相機風格', ['leica', 'leicav', 'grpos', 'grneg', 'chrome', 'cneg']],
+    ['底片', ['portra', 'gold', 'cinestill', 'expired', 'trix']],
+    ['數位 CCD', ['ccd', 'ccdflash']]
+  ];
 
   /* ---------- small helpers ---------- */
   function $(s, root) { return (root || document).querySelector(s); }
@@ -442,6 +511,368 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
     return out.trim();
   }
 
+  /* ---------- colour engine: presets are baked into a 3D LUT, then applied per pixel ---------- */
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function toLin(v) { return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  function toGam(v) { if (v <= 0) return 0; return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055; }
+  function shoulder(x) { if (x <= 0.8) return x; return 0.8 + 0.2 * (1 - Math.exp(-(x - 0.8) / 0.2)); }
+  var BANDS = { red: [0, 30], orange: [30, 25], yellow: [60, 30], green: [120, 50], aqua: [180, 45], blue: [225, 45], purple: [270, 40], magenta: [315, 45] };
+  function hexRgb(h) { var n = parseInt(String(h).slice(1), 16) || 0; return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+  function tintVec(hex) { var c = hexRgb(hex), y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; return [c[0] - y, c[1] - y, c[2] - y]; }
+  function rgb2hsl(r, g, b, out) {
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, s = 0, d = mx - mn;
+    if (d > 1e-6) {
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (mx === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    out[0] = h; out[1] = s; out[2] = l;
+    return out;
+  }
+  function hue2rgb(p, q, t) {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  function hsl2rgb(h, s, l, out) {
+    if (s <= 0) { out[0] = out[1] = out[2] = l; return out; }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q, hh = h / 360;
+    out[0] = hue2rgb(p, q, hh + 1 / 3); out[1] = hue2rgb(p, q, hh); out[2] = hue2rgb(p, q, hh - 1 / 3);
+    return out;
+  }
+  function contrastCurve(x, c) {
+    if (!c) return x;
+    var k = c >= 0 ? 1 + c * 1.6 : 1 / (1 - c * 0.9);
+    return x < 0.5 ? 0.5 * Math.pow(2 * x, k) : 1 - 0.5 * Math.pow(2 * (1 - x), k);
+  }
+  function toneHS(x, hi, sh) {
+    if (hi && x > 0.5) x += hi * 0.25 * Math.pow((x - 0.5) / 0.5, 1.5) * (1 - x) * 3.2;
+    if (sh && x < 0.5) x += sh * 0.25 * Math.pow((0.5 - x) / 0.5, 1.5) * x * 3.2;
+    return x;
+  }
+  function buildColorFn(P) {
+    var temp = (P.temp || 0) / 100, tint = (P.tint || 0) / 100, ev = P.exposure || 0, expK = Math.pow(2, ev);
+    var con = (P.contrast || 0) / 100, hi = (P.hi || 0) / 100, sh = (P.sh || 0) / 100;
+    var sat = (P.sat || 0) / 100, vib = (P.vib || 0) / 100, fade = (P.fade || 0) / 100, gam = P.gamma || 1;
+    var lift = P.lift || [0, 0, 0], gain = P.gain || [1, 1, 1];
+    var bands = Object.keys(P.hsl || {}).map(function (k) {
+      var b = P.hsl[k];
+      return { c: BANDS[k][0], w: BANDS[k][1], h: b.h || 0, s: (b.s || 0) / 100, l: (b.l || 0) / 100 };
+    });
+    var split = P.split || {};
+    var sT = split.s ? tintVec(split.s) : null, hT = split.h ? tintVec(split.h) : null;
+    var sA = (split.sa || 0) * 2.2, hA = (split.ha || 0) * 2.2;
+    var bw = !!P.bw, mix = P.mix || [0.2126, 0.7152, 0.0722], keep = P.keep || null;
+    var mixSum = mix[0] + mix[1] + mix[2];
+    var useWB = ev !== 0 || temp !== 0 || tint !== 0, needHSL = bands.length > 0 || (bw && !!keep);
+    var hsl = [0, 0, 0], tmp = [0, 0, 0];
+    return function (c) {
+      var r = c[0], g = c[1], b = c[2], H = 0, S = 0;
+      if (useWB) {
+        r = toGam(shoulder(toLin(r) * expK * (1 + temp * 0.10)));
+        g = toGam(shoulder(toLin(g) * expK * (1 - tint * 0.08)));
+        b = toGam(shoulder(toLin(b) * expK * (1 - temp * 0.14)));
+      }
+      if (needHSL) {
+        rgb2hsl(r, g, b, hsl); H = hsl[0]; S = hsl[1];
+        if (bands.length && S > 0.002) {
+          var dh = 0, ds = 0, dl = 0;
+          for (var i = 0; i < bands.length; i++) {
+            var bd = bands[i], d = Math.abs(H - bd.c);
+            if (d > 180) d = 360 - d;
+            if (d < bd.w) { var u = 1 - d / bd.w; u = u * u * (3 - 2 * u); dh += bd.h * u; ds += bd.s * u; dl += bd.l * u; }
+          }
+          if (dh || ds || dl) {
+            hsl2rgb((H + dh + 360) % 360, clamp01(S * (1 + ds)), clamp01(hsl[2] + dl * 0.22 * S), tmp);
+            r = tmp[0]; g = tmp[1]; b = tmp[2];
+          }
+        }
+      }
+      if (bw) {
+        var y = clamp01((r * mix[0] + g * mix[1] + b * mix[2]) / mixSum), kk = 0;
+        if (keep) {
+          var dd = Math.abs(H - keep.h);
+          if (dd > 180) dd = 360 - dd;
+          if (dd < keep.w) { var t = 1 - dd / keep.w; kk = t * t * (3 - 2 * t) * clamp01((S - 0.12) / 0.25) * keep.a; }
+        }
+        r = y + (r - y) * kk; g = y + (g - y) * kk; b = y + (b - y) * kk;
+      }
+      if (sat || vib) {
+        var yy = 0.2126 * r + 0.7152 * g + 0.0722 * b, cs = Math.max(r, g, b) - Math.min(r, g, b);
+        var k = (1 + sat) * (1 + vib * (1 - cs));
+        r = yy + (r - yy) * k; g = yy + (g - yy) * k; b = yy + (b - yy) * k;
+      }
+      if (gam !== 1) { r = Math.pow(clamp01(r), gam); g = Math.pow(clamp01(g), gam); b = Math.pow(clamp01(b), gam); }
+      r = toneHS(contrastCurve(clamp01(r), con), hi, sh);
+      g = toneHS(contrastCurve(clamp01(g), con), hi, sh);
+      b = toneHS(contrastCurve(clamp01(b), con), hi, sh);
+      if (sT || hT) {
+        var ly = clamp01(0.2126 * r + 0.7152 * g + 0.0722 * b), ws = (1 - ly) * (1 - ly) * sA, wh = ly * ly * hA;
+        if (sT) { r += sT[0] * ws; g += sT[1] * ws; b += sT[2] * ws; }
+        if (hT) { r += hT[0] * wh; g += hT[1] * wh; b += hT[2] * wh; }
+      }
+      if (fade) { var bl = fade * 0.2; r = bl + r * (1 - bl); g = bl + g * (1 - bl); b = bl + b * (1 - bl); }
+      r = lift[0] + clamp01(r) * (gain[0] - lift[0]);
+      g = lift[1] + clamp01(g) * (gain[1] - lift[1]);
+      b = lift[2] + clamp01(b) * (gain[2] - lift[2]);
+      c[0] = clamp01(r); c[1] = clamp01(g); c[2] = clamp01(b);
+      return c;
+    };
+  }
+  function buildLUT(N, presetFn, amount, manualFn) {
+    var lut = new Float32Array(N * N * N * 3), c = [0, 0, 0], i = 0;
+    for (var bi = 0; bi < N; bi++) {
+      for (var gi = 0; gi < N; gi++) {
+        for (var ri = 0; ri < N; ri++) {
+          var r0 = ri / (N - 1), g0 = gi / (N - 1), b0 = bi / (N - 1);
+          c[0] = r0; c[1] = g0; c[2] = b0;
+          if (presetFn) {
+            presetFn(c);
+            if (amount < 1) { c[0] = r0 + (c[0] - r0) * amount; c[1] = g0 + (c[1] - g0) * amount; c[2] = b0 + (c[2] - b0) * amount; }
+          }
+          if (manualFn) manualFn(c);
+          lut[i++] = c[0] * 255; lut[i++] = c[1] * 255; lut[i++] = c[2] * 255;
+        }
+      }
+    }
+    return lut;
+  }
+  function applyLUT(d, lut, N) {
+    var s = (N - 1) / 255, last = N - 1, dr = 3, dg = N * 3, db = N * N * 3;
+    for (var i = 0, n = d.length; i < n; i += 4) {
+      var fr0 = d[i] * s, fg0 = d[i + 1] * s, fb0 = d[i + 2] * s;
+      var r0 = fr0 | 0, g0 = fg0 | 0, b0 = fb0 | 0;
+      if (r0 >= last) r0 = last - 1;
+      if (g0 >= last) g0 = last - 1;
+      if (b0 >= last) b0 = last - 1;
+      var fr = fr0 - r0, fg = fg0 - g0, fb = fb0 - b0;
+      var c0 = ((b0 * N + g0) * N + r0) * 3, c3 = c0 + dr + dg + db, c1, c2, w0, w1, w2, w3;
+      if (fr > fg) {
+        if (fg > fb) { c1 = c0 + dr; c2 = c0 + dr + dg; w0 = 1 - fr; w1 = fr - fg; w2 = fg - fb; w3 = fb; }
+        else if (fr > fb) { c1 = c0 + dr; c2 = c0 + dr + db; w0 = 1 - fr; w1 = fr - fb; w2 = fb - fg; w3 = fg; }
+        else { c1 = c0 + db; c2 = c0 + dr + db; w0 = 1 - fb; w1 = fb - fr; w2 = fr - fg; w3 = fg; }
+      } else {
+        if (fb > fg) { c1 = c0 + db; c2 = c0 + dg + db; w0 = 1 - fb; w1 = fb - fg; w2 = fg - fr; w3 = fr; }
+        else if (fb > fr) { c1 = c0 + dg; c2 = c0 + dg + db; w0 = 1 - fg; w1 = fg - fb; w2 = fb - fr; w3 = fr; }
+        else { c1 = c0 + dg; c2 = c0 + dr + dg; w0 = 1 - fg; w1 = fg - fr; w2 = fr - fb; w3 = fb; }
+      }
+      d[i] = w0 * lut[c0] + w1 * lut[c1] + w2 * lut[c2] + w3 * lut[c3];
+      d[i + 1] = w0 * lut[c0 + 1] + w1 * lut[c1 + 1] + w2 * lut[c2 + 1] + w3 * lut[c3 + 1];
+      d[i + 2] = w0 * lut[c0 + 2] + w1 * lut[c1 + 2] + w2 * lut[c2 + 2] + w3 * lut[c3 + 2];
+    }
+  }
+  function colorSig(s) { var f = s.flt; return [f.preset, f.amount, f.exposure, f.contrast, f.saturation, f.temp, f.tint, f.fade].join(','); }
+  function filterSig(s) {
+    var f = s.flt;
+    return [colorSig(s), f.grain, f.vignette, f.glow, f.sharpen, f.leak, f.stamp ? f.stampColor + f.stampPos + f.stampSize : 0].join(',');
+  }
+  function colorActive(s) {
+    var f = s.flt;
+    return (f.preset !== 'none' && f.amount > 0 && !!(PRESETS[f.preset] || {}).color) || !!(f.exposure || f.contrast || f.saturation || f.temp || f.tint || f.fade);
+  }
+  function filterActive(s) {
+    var f = s.flt;
+    return colorActive(s) || !!(f.grain || f.vignette || f.glow || f.sharpen || f.leak || f.stamp);
+  }
+  var lutCache = new Map();
+  function getLUT(s, N) {
+    if (!colorActive(s)) return null;
+    var key = colorSig(s) + '|' + N;
+    if (lutCache.has(key)) return lutCache.get(key);
+    var f = s.flt, pr = PRESETS[f.preset] || PRESETS.none;
+    var pf = pr.color && f.amount > 0 ? buildColorFn(pr.color) : null;
+    var man = { exposure: f.exposure / 100, contrast: f.contrast, sat: f.saturation, temp: f.temp, tint: f.tint, fade: f.fade };
+    var mf = (man.exposure || man.contrast || man.sat || man.temp || man.tint || man.fade) ? buildColorFn(man) : null;
+    var lut = buildLUT(N, pf, f.amount / 100, mf);
+    if (lutCache.size > 5) lutCache.delete(lutCache.keys().next().value);
+    lutCache.set(key, lut);
+    return lut;
+  }
+
+  /* ---------- texture effects ---------- */
+  function sharpenData(d, w, h, a) {
+    var src = new Uint8ClampedArray(d), row = w * 4, k = 1 + 4 * a;
+    for (var y = 1; y < h - 1; y++) {
+      for (var x = 1, i = y * row + 4; x < w - 1; x++, i += 4) {
+        d[i] = src[i] * k - a * (src[i - 4] + src[i + 4] + src[i - row] + src[i + row]);
+        d[i + 1] = src[i + 1] * k - a * (src[i - 3] + src[i + 5] + src[i + 1 - row] + src[i + 1 + row]);
+        d[i + 2] = src[i + 2] * k - a * (src[i - 2] + src[i + 6] + src[i + 2 - row] + src[i + 2 + row]);
+      }
+    }
+  }
+  function drawGlow(g, c, w, h, amount, type, space) {
+    var f = Math.max(1, Math.max(w, h) / 420);
+    var sw = Math.max(8, Math.round(w / f)), sh = Math.max(8, Math.round(h / f));
+    var t = makeCanvas(sw, sh), tg = ctx2d(t, space), red = type === 'red';
+    tg.imageSmoothingEnabled = true;
+    tg.imageSmoothingQuality = 'high';
+    tg.drawImage(c, 0, 0, sw, sh);
+    var id = tg.getImageData(0, 0, sw, sh), d = id.data;
+    for (var i = 0; i < d.length; i += 4) {
+      var L = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+      var k = (L - 0.6) / 0.35;
+      k = k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k);
+      if (red) { d[i] = 255 * k; d[i + 1] = 70 * k * k; d[i + 2] = 30 * k * k; }
+      else { d[i] *= k; d[i + 1] *= k; d[i + 2] *= k; }
+    }
+    var rad = Math.max(2, Math.round(Math.min(sw, sh) * (red ? 0.018 : 0.035)));
+    if (window.StackBlur && window.StackBlur.imageDataRGB) window.StackBlur.imageDataRGB(id, 0, 0, sw, sh, rad);
+    tg.putImageData(id, 0, 0);
+    if (!(window.StackBlur && window.StackBlur.imageDataRGB)) softBlurFallback(t, tg);
+    g.save();
+    g.globalCompositeOperation = 'screen';
+    g.globalAlpha = Math.min(1, amount / 100 * (red ? 1.1 : 0.85));
+    g.imageSmoothingEnabled = true;
+    g.drawImage(t, 0, 0, w, h);
+    g.restore();
+    releaseCanvas(t);
+  }
+  function drawLeak(g, w, h, amount) {
+    var R = Math.max(w, h);
+    var grd = g.createRadialGradient(w * 0.95, h * 0.12, 0, w * 0.95, h * 0.12, R * 0.8);
+    grd.addColorStop(0, 'rgba(255,140,60,0.95)');
+    grd.addColorStop(0.3, 'rgba(255,70,40,0.5)');
+    grd.addColorStop(1, 'rgba(255,60,40,0)');
+    g.save();
+    g.globalCompositeOperation = 'screen';
+    g.globalAlpha = amount / 100;
+    g.fillStyle = grd;
+    g.fillRect(0, 0, w, h);
+    g.restore();
+  }
+  function drawVignette(g, w, h, amount) {
+    var r = Math.hypot(w, h) / 2;
+    var grd = g.createRadialGradient(w / 2, h / 2, r * 0.3, w / 2, h / 2, r);
+    var edge = Math.round(255 * (1 - amount / 100 * 0.78)), mid = Math.round(255 - (255 - edge) * 0.35);
+    grd.addColorStop(0, 'rgb(255,255,255)');
+    grd.addColorStop(0.55, 'rgb(' + mid + ',' + mid + ',' + mid + ')');
+    grd.addColorStop(1, 'rgb(' + edge + ',' + edge + ',' + edge + ')');
+    g.save();
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = grd;
+    g.fillRect(0, 0, w, h);
+    g.restore();
+  }
+  var noiseTiles = {};
+  function noiseTile(chroma) {
+    var key = chroma ? 'c' : 'm';
+    if (noiseTiles[key]) return noiseTiles[key];
+    var n = 192, c = makeCanvas(n, n), g = c.getContext('2d'), id = g.createImageData(n, n), d = id.data;
+    for (var i = 0; i < d.length; i += 4) {
+      var l = (Math.random() + Math.random() + Math.random() - 1.5) * 90;
+      if (chroma) {
+        d[i] = 128 + l * 0.6 + (Math.random() - 0.5) * 120;
+        d[i + 1] = 128 + l * 0.6 + (Math.random() - 0.5) * 120;
+        d[i + 2] = 128 + l * 0.6 + (Math.random() - 0.5) * 120;
+      } else {
+        d[i] = d[i + 1] = d[i + 2] = 128 + l;
+      }
+      d[i + 3] = 255;
+    }
+    g.putImageData(id, 0, 0);
+    noiseTiles[key] = c;
+    return c;
+  }
+  function drawGrain(g, w, h, amount, size, chroma) {
+    var cell = Math.max(0.5, size * Math.max(w, h) / 2600);
+    g.save();
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = Math.min(1, amount / 100 * 0.6);
+    g.imageSmoothingEnabled = cell > 1.2;
+    g.scale(cell, cell);
+    g.fillStyle = g.createPattern(noiseTile(chroma), 'repeat');
+    g.fillRect(0, 0, w / cell + 1, h / cell + 1);
+    g.restore();
+  }
+  var SEG7 = { '0': 'abcdef', '1': 'bc', '2': 'abged', '3': 'abgcd', '4': 'fgbc', '5': 'afgcd', '6': 'afgedc', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg' };
+  function stampText(vals) {
+    var m = /(\d{2,4})\D+(\d{1,2})\D+(\d{1,2})/.exec(String(vals.date || ''));
+    var y, mo, da;
+    if (m) { y = m[1]; mo = pad(+m[2]); da = pad(+m[3]); }
+    else { var n = new Date(); y = String(n.getFullYear()); mo = pad(n.getMonth() + 1); da = pad(n.getDate()); }
+    return "'" + y.slice(-2) + ' ' + mo + ' ' + da;
+  }
+  function segBar(g, x1, y1, x2, y2, t) {
+    var hh = t / 2;
+    g.beginPath();
+    if (y1 === y2) {
+      g.moveTo(x1, y1); g.lineTo(x1 + hh, y1 - hh); g.lineTo(x2 - hh, y1 - hh);
+      g.lineTo(x2, y1); g.lineTo(x2 - hh, y1 + hh); g.lineTo(x1 + hh, y1 + hh);
+    } else {
+      g.moveTo(x1, y1); g.lineTo(x1 + hh, y1 + hh); g.lineTo(x1 + hh, y2 - hh);
+      g.lineTo(x1, y2); g.lineTo(x1 - hh, y2 - hh); g.lineTo(x1 - hh, y1 + hh);
+    }
+    g.closePath();
+    g.fill();
+  }
+  function drawDigit(g, ch, x, y, w, h, t) {
+    var segs = SEG7[ch];
+    if (!segs) return;
+    var gap = t * 0.2, m = y + h / 2, L = x + t / 2, R = x + w - t / 2, T = y + t / 2, B = y + h - t / 2;
+    if (segs.indexOf('a') >= 0) segBar(g, L + gap, T, R - gap, T, t);
+    if (segs.indexOf('g') >= 0) segBar(g, L + gap, m, R - gap, m, t);
+    if (segs.indexOf('d') >= 0) segBar(g, L + gap, B, R - gap, B, t);
+    if (segs.indexOf('f') >= 0) segBar(g, L, T + gap, L, m - gap, t);
+    if (segs.indexOf('b') >= 0) segBar(g, R, T + gap, R, m - gap, t);
+    if (segs.indexOf('e') >= 0) segBar(g, L, m + gap, L, B - gap, t);
+    if (segs.indexOf('c') >= 0) segBar(g, R, m + gap, R, B - gap, t);
+  }
+  function drawStamp(g, w, h, s, vals) {
+    var f = s.flt, chars = Array.from(stampText(vals));
+    var hh = Math.max(6, f.stampSize / 100 * h), dw = hh * 0.52, t = hh * 0.13, adv = dw + hh * 0.2;
+    var widths = chars.map(function (ch) { return ch === ' ' ? hh * 0.35 : ch === "'" ? t * 3.6 : adv; });
+    var total = widths.reduce(function (a, b) { return a + b; }, 0) - hh * 0.2;
+    var margin = Math.min(w, h) * 0.05;
+    var x0 = f.stampPos === 'bl' ? margin : w - margin - total, y0 = h - margin - hh;
+    g.save();
+    g.fillStyle = f.stampColor;
+    g.shadowColor = f.stampColor;
+    g.shadowBlur = hh * 0.45;
+    g.globalAlpha = 0.92;
+    g.translate(x0, y0);
+    g.transform(1, 0, -0.1, 1, hh * 0.1, 0);
+    var x = 0;
+    chars.forEach(function (ch, i) {
+      if (SEG7[ch]) drawDigit(g, ch, x, 0, dw, hh, t);
+      else if (ch === "'") segBar(g, x + t, t * 0.6, x + t, hh * 0.34, t * 0.9);
+      x += widths[i];
+    });
+    g.restore();
+  }
+  function applyFilter(c, g, w, h, s, vals, space, N) {
+    var f = s.flt, fx = (PRESETS[f.preset] || PRESETS.none).fx || {};
+    var lut = getLUT(s, N);
+    if (lut || f.sharpen > 0) {
+      var id = g.getImageData(0, 0, w, h);
+      if (lut) applyLUT(id.data, lut, N);
+      if (f.sharpen > 0) sharpenData(id.data, w, h, f.sharpen / 100 * 0.6);
+      g.putImageData(id, 0, 0);
+    }
+    if (f.glow > 0) drawGlow(g, c, w, h, f.glow, fx.glowType || 'white', space);
+    if (f.leak > 0) drawLeak(g, w, h, f.leak);
+    if (f.vignette > 0) drawVignette(g, w, h, f.vignette);
+    if (f.stamp) drawStamp(g, w, h, s, vals);
+    if (f.grain > 0) drawGrain(g, w, h, f.grain, fx.grainSize || 1.2, !!fx.chroma);
+  }
+  var photoCache = { key: '', canvas: null };
+  function clearPhotoCache() { if (photoCache.canvas) releaseCanvas(photoCache.canvas); photoCache = { key: '', canvas: null }; }
+  function filteredPhoto(src, pw, ph, s, vals, opt) {
+    var key = opt.cacheKey ? opt.cacheKey + '|' + pw + 'x' + ph + '|' + filterSig(s) + '|' + (s.flt.stamp ? stampText(vals) : '') : '';
+    if (key && photoCache.key === key && photoCache.canvas) return photoCache.canvas;
+    var c = makeCanvas(pw, ph), g = ctx2d(c, opt.space);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(src, 0, 0, pw, ph);
+    applyFilter(c, g, pw, ph, s, vals, opt.space, opt.cacheKey ? 25 : 33);
+    if (key) { clearPhotoCache(); photoCache = { key: key, canvas: c }; }
+    return c;
+  }
+
   /* ---------- state ---------- */
   var photos = [];
   var currentId = null;
@@ -552,14 +983,15 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
   }
   function drawBlurBg(ctx, bgSrc, fullSrc, w, h, s, opt) {
     var R = s.blur / 100 * 0.07 * Math.min(w, h);
+    var bgLut = s.flt && s.flt.bg ? getLUT(s, 17) : null;
     var src = R < 1 ? fullSrc : bgSrc;
     var d0 = dims(src);
     var cover = Math.max(w / d0.w, h / d0.h) * s.zoom;
     var dw = d0.w * cover, dh = d0.h * cover, dx = (w - dw) / 2, dy = (h - dh) / 2;
-    if (R < 1) { ctx.drawImage(src, dx, dy, dw, dh); return; }
+    if (R < 1 && !bgLut) { ctx.drawImage(src, dx, dy, dw, dh); return; }
     var f = Math.max(1, R / 10);
     var sw = Math.max(4, Math.round(w / f)), sh = Math.max(4, Math.round(h / f));
-    var key = opt.cacheKey ? opt.cacheKey + '|' + sw + 'x' + sh + '|' + s.blur + '|' + s.zoom : '';
+    var key = opt.cacheKey ? opt.cacheKey + '|' + sw + 'x' + sh + '|' + s.blur + '|' + s.zoom + '|' + (bgLut ? colorSig(s) : '') : '';
     var small = key ? blurCache.get(key) : null;
     if (!small) {
       small = makeCanvas(sw, sh);
@@ -569,13 +1001,14 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
       var fx = sw / w, fy = sh / h;
       g.drawImage(src, dx * fx, dy * fy, dw * fx, dh * fy);
       var r = Math.max(1, Math.min(200, Math.round(R / f)));
-      if (window.StackBlur && window.StackBlur.imageDataRGB) {
+      var canBlur = !!(window.StackBlur && window.StackBlur.imageDataRGB);
+      if (bgLut || (canBlur && R >= 1)) {
         var id = g.getImageData(0, 0, sw, sh);
-        window.StackBlur.imageDataRGB(id, 0, 0, sw, sh, r);
+        if (bgLut) applyLUT(id.data, bgLut, 17);
+        if (canBlur && R >= 1) window.StackBlur.imageDataRGB(id, 0, 0, sw, sh, r);
         g.putImageData(id, 0, 0);
-      } else {
-        softBlurFallback(small, g);
       }
+      if (!canBlur && R >= 1) softBlurFallback(small, g);
       if (key) {
         if (blurCache.size > 8) { var first = blurCache.keys().next().value; releaseCanvas(blurCache.get(first)); blurCache.delete(first); }
         blurCache.set(key, small);
@@ -767,11 +1200,14 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
       ctx.fill();
       ctx.restore();
     }
+    var photoImg = src;
+    if (filterActive(s)) photoImg = filteredPhoto(src, Math.max(1, Math.round(P.w * k)), Math.max(1, Math.round(P.h * k)), s, vals, opt);
     ctx.save();
     pathRound(ctx, P.x, P.y, P.w, P.h, rad);
     ctx.clip();
-    ctx.drawImage(src, P.x, P.y, P.w, P.h);
+    ctx.drawImage(photoImg, P.x, P.y, P.w, P.h);
     ctx.restore();
+    if (photoImg !== src && !opt.cacheKey) releaseCanvas(photoImg);
     drawTextBlock(ctx, s, L, vals, k);
     drawWatermark(ctx, s, L, vals);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -858,6 +1294,8 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
       currentPrev = prev;
       if (old && old !== sampleCanvas && old !== prev) closeBitmap(old);
       clearBlurCache();
+      clearPhotoCache();
+      refreshFilterThumbs();
       renderStrip(); buildPhotoPanel(); refreshVisibility(); updateReadout(); updateActions(); updateSizeHint();
       requestRender();
     }).catch(function (e) { console.error(e); toast('這張照片的預覽開不起來'); });
@@ -985,6 +1423,7 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
   }
   function afterChange(path) {
     if (path === 'wm.tile' && S.wm.tile && !S.wm.rotate) { S.wm.rotate = -30; buildWmPanel(); }
+    if (path === 'flt.stamp') S.flt.stampAuto = false;
   }
   function changed(path) {
     if (path) afterChange(path);
@@ -1129,6 +1568,117 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
     );
     panel.replaceChildren(head, info);
   }
+  function signed(v) { return (v > 0 ? '+' : '') + v; }
+  var thumbTiles = [], thumbCache = new Map(), thumbBase = { id: null, canvas: null }, thumbJob = 0;
+  function squareCrop(src, size) {
+    var d = dims(src), k = size / Math.min(d.w, d.h);
+    var c = makeCanvas(size, size), g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(src, (size - d.w * k) / 2, (size - d.h * k) / 2, d.w * k, d.h * k);
+    return c;
+  }
+  function presetThumb(base, id) {
+    var c = makeCanvas(96, 96), g = c.getContext('2d'), pr = PRESETS[id] || PRESETS.none, fx = pr.fx || {};
+    g.drawImage(base, 0, 0);
+    if (pr.color) {
+      var lut = buildLUT(13, buildColorFn(pr.color), 1, null), im = g.getImageData(0, 0, 96, 96);
+      applyLUT(im.data, lut, 13);
+      g.putImageData(im, 0, 0);
+    }
+    if (fx.vignette) drawVignette(g, 96, 96, fx.vignette);
+    return c;
+  }
+  function refreshFilterThumbs() {
+    var p = currentPhoto();
+    if (!p || !currentPrev || !thumbTiles.length) return;
+    if (thumbBase.id !== p.id) {
+      if (thumbBase.canvas) releaseCanvas(thumbBase.canvas);
+      thumbCache.forEach(function (c) { releaseCanvas(c); });
+      thumbCache.clear();
+      thumbBase = { id: p.id, canvas: squareCrop(currentPrev, 96) };
+    }
+    var job = ++thumbJob, i = 0;
+    (function next() {
+      if (job !== thumbJob) return;
+      var t = thumbTiles[i++];
+      if (!t) return;
+      if (t[1].isConnected) {
+        var c = thumbCache.get(t[0]);
+        if (!c) { c = presetThumb(thumbBase.canvas, t[0]); thumbCache.set(t[0], c); }
+        var g = t[1].getContext('2d');
+        g.clearRect(0, 0, 96, 96);
+        g.drawImage(c, 0, 0);
+      }
+      setTimeout(next, 0);
+    })();
+  }
+  function choosePreset(id) {
+    var pr = PRESETS[id] || PRESETS.none, fx = pr.fx || {}, f = S.flt;
+    if (f.preset === id) return;
+    f.preset = id;
+    f.amount = 100;
+    f.grain = fx.grain || 0;
+    f.vignette = fx.vignette || 0;
+    f.glow = fx.glow || 0;
+    f.sharpen = fx.sharpen || 0;
+    f.leak = fx.leak || 0;
+    if (fx.stamp) { f.stamp = true; f.stampAuto = true; }
+    else if (f.stampAuto) { f.stamp = false; f.stampAuto = false; }
+    saveSoon();
+    buildFilterPanel();
+    refreshVisibility();
+    requestRender();
+  }
+  function buildFilterPanel() {
+    var panel = $('#panel-filter');
+    thumbTiles = [];
+    var groups = el('div', { class: 'fgroups' }, PRESET_GROUPS.map(function (grp) {
+      return el('div', { class: 'fgroup' },
+        el('div', { class: 'fgroup-h', text: grp[0] }),
+        el('div', { class: 'ftiles' }, grp[1].map(function (id) {
+          var cv = el('canvas', { width: '96', height: '96', 'aria-hidden': 'true' });
+          thumbTiles.push([id, cv]);
+          return el('button', { type: 'button', class: 'ftile', 'aria-pressed': String(S.flt.preset === id), onclick: function () { choosePreset(id); } },
+            cv, el('span', { text: PRESETS[id].name }));
+        })));
+    }));
+    var resetAdj = el('button', { type: 'button', class: 'btn small', onclick: function () {
+      var f = S.flt;
+      f.exposure = f.contrast = f.saturation = f.temp = f.tint = f.fade = 0;
+      saveSoon(); buildFilterPanel(); refreshVisibility(); requestRender();
+    } }, '微調歸零');
+    panel.replaceChildren(
+      card('濾鏡', [
+        groups,
+        showIf(rangeRow('flt.amount', '強度', 0, 100, 1, function (v) { return v + '%'; }), function () { return S.flt.preset !== 'none'; }),
+        el('p', { class: 'hint', text: '相機和底片濾鏡是照各家色調特徵調出來的近似風格，不是原廠演算法。換濾鏡時，顆粒、暗角這些質感會換成該濾鏡的預設值。' })
+      ]),
+      card('微調', [
+        rangeRow('flt.exposure', '曝光', -100, 100, 1, function (v) { return (v > 0 ? '+' : '') + (v / 100).toFixed(2) + ' EV'; }),
+        rangeRow('flt.contrast', '對比', -50, 50, 1, signed),
+        rangeRow('flt.saturation', '飽和', -100, 50, 1, signed),
+        rangeRow('flt.temp', '色溫', -50, 50, 1, signed),
+        rangeRow('flt.tint', '色調', -50, 50, 1, signed),
+        rangeRow('flt.fade', '褪色', 0, 60, 1, String),
+        el('div', { class: 'btnrow' }, resetAdj)
+      ]),
+      card('質感', [
+        rangeRow('flt.grain', '顆粒', 0, 100, 1, String),
+        rangeRow('flt.vignette', '暗角', 0, 100, 1, String),
+        rangeRow('flt.glow', '光暈', 0, 100, 1, String),
+        rangeRow('flt.sharpen', '銳利', 0, 100, 1, String),
+        rangeRow('flt.leak', '漏光', 0, 100, 1, String),
+        switchRow('flt.bg', '模糊背景也套用濾鏡')
+      ]),
+      card('日期戳記', [
+        colorRow('flt.stampColor', '顏色'),
+        segRow('flt.stampPos', '位置', [['br', '右下'], ['bl', '左下']]),
+        rangeRow('flt.stampSize', '大小', 2, 8, 0.1, pct),
+        el('p', { class: 'hint', text: '用照片的拍攝日期，像底片相機那樣印在照片角落；照片沒有日期就用今天。' })
+      ], 'flt.stamp')
+    );
+    refreshFilterThumbs();
+  }
   function buildTextPanel() {
     var panel = $('#panel-text');
     var global = card('整體', [
@@ -1265,7 +1815,7 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
     updateSizeHint();
   }
   function rebuildPanels() {
-    buildPhotoPanel(); buildTextPanel(); buildWmPanel(); buildLayoutPanel(); buildOutPanel();
+    buildPhotoPanel(); buildFilterPanel(); buildTextPanel(); buildWmPanel(); buildLayoutPanel(); buildOutPanel();
     refreshVisibility();
   }
   function updateSizeHint() {
@@ -1277,9 +1827,10 @@ input[type=color]{width:46px;height:34px;border:1px solid var(--line);border-rad
   }
 
   /* ---------- chrome ---------- */
-  var TABS = ['photo', 'text', 'wm', 'layout', 'out'];
+  var TABS = ['photo', 'filter', 'text', 'wm', 'layout', 'out'];
   function selectTab(name) {
     if (TABS.indexOf(name) < 0) name = 'text';
+    if (name === 'filter') setTimeout(refreshFilterThumbs, 0);
     TABS.forEach(function (t) {
       var on = t === name;
       var tab = document.getElementById('tab-' + t);
