@@ -1,0 +1,18 @@
+照片參數邊框 Photo Frame
+Copyright (c) 2026 EN906. All rights reserved.
+
+【中文】
+
+1. 任何人都可以免費使用網站 https://en906.github.io/photo-frame/ 處理自己的照片。用這個工具做出來的照片屬於使用者本人。
+2. 本專案的原始碼、介面設計與濾鏡設定，未經 EN906 事先同意，不得複製、引用、修改、重新發布，或用在其他專案中。法律允許的合理使用不在此限。
+3. 如需取得同意，請到 https://github.com/EN906/photo-frame/issues 開一則 Issue 聯絡。
+4. vendor、fonts 與 licenses 資料夾中的第三方元件與字型，依各自的授權條款使用，不受本條款限制。
+5. 依 GitHub 服務條款，其他 GitHub 使用者可以在 GitHub 上檢視及 fork 本專案；這不代表取得上述第 2 點的任何權利。
+
+[English]
+
+1. Anyone may use the website at https://en906.github.io/photo-frame/ free of charge to process their own photos. Images created with the tool belong to the person who created them.
+2. No permission is granted to copy, quote, modify, redistribute, or reuse the source code, interface design, or filter presets of this project in other projects without prior permission from EN906, except as allowed by applicable law (such as fair use).
+3. To request permission, open an issue at https://github.com/EN906/photo-frame/issues.
+4. Third-party components and fonts in the vendor, fonts and licenses folders are provided under their own licenses and are not covered by these terms.
+5. Under the GitHub Terms of Service, other GitHub users may view and fork this repository on GitHub; this grants no rights under item 2.
