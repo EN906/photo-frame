@@ -14,6 +14,7 @@
 - 打開過一次就能離線使用
 - 按「存到相簿」會直接跳出分享選單，存進「照片」
 - 內建 18 種濾鏡（電影暖橙、日系灰霧、徠卡風、底片、CCD 等），可微調顆粒、暗角、光暈，也能加日期戳記
+- 每個設定都能單獨還原：改過的項目旁邊會出現 ↺，每個區塊有「重設」，濾鏡、文字、版面也能一次還原整頁；按錯了可以馬上按「復原」
 
 照片只在手機上處理，不會上傳到任何地方。
 
@@ -70,6 +71,7 @@ Photo Frame adds a blurred-background border to your photos, along with the came
 - It works offline after the first visit
 - The save button opens the share sheet, so you can save straight to Photos
 - It includes 18 filters (warm cinematic, faded Japanese style, Leica style, film, CCD and more), with adjustable grain, vignette and glow, plus an optional date stamp
+- Each setting can be reset on its own: a ↺ button appears next to anything you've changed, each section has its own 重設 (Reset) button, and the filter, text and layout tabs can each be reset as a whole. If you reset something by mistake, tap 復原 (Undo) right away
 
 Photos are processed only on your device and are never uploaded.
 

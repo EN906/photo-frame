@@ -1,5 +1,5 @@
 // Offline cache for the photo frame app. Bump CACHE when you change any file.
-const CACHE = 'pframe-357b24e423';
+const CACHE = 'pframe-126d74784d';
 const ASSETS = [
   "./",
   "./index.html",
